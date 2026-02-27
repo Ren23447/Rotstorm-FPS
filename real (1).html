@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rotstorm FPS</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; user-select: none; }
+        canvas { display: block; width: 100vw; height: 100vh; }
+        
+        /* UI Overlays */
+        #ui-layer { position: absolute; inset: 0; pointer-events: none; z-index: 10; display: flex; flex-direction: column; }
+        
+        #stamina-container {
+            position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
+            width: 300px; height: 8px; background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 4px; overflow: hidden; display: none; box-shadow: 0 0 10px rgba(0,0,0,0.5);
+        }
+        #stamina-bar { width: 100%; height: 100%; background: #fff; transition: width 0.1s linear, background-color 0.2s; }
+        
+        #ammo-container {
+            position: absolute; bottom: 40px; right: 40px; font-size: 48px; color: #fff; 
+            font-weight: bold; text-shadow: 0 0 10px rgba(255,255,255,0.5); font-family: 'Segoe UI', sans-serif;
+        }
+        
+        #crosshair {
+            position: absolute; top: 50%; left: 50%; width: 6px; height: 6px;
+            transform: translate(-50%, -50%); background: rgba(255,255,255,0.8);
+            border-radius: 50%; pointer-events: none; z-index: 5; display: none;
+            box-shadow: 0 0 4px rgba(0,0,0,0.8);
+        }
+
+        /* Screens */
+        .screen {
+            position: absolute; inset: 0; background-color: rgba(0,0,0,0.85);
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            color: white; z-index: 20; pointer-events: auto; backdrop-filter: blur(5px);
+        }
+        .hidden { display: none !important; }
+        
+        h1 { margin-top: 0; font-size: 48px; color: #fff; text-transform: uppercase; letter-spacing: 2px; text-shadow: 0 0 15px rgba(255,255,255,0.5); }
+        h2 { font-size: 24px; color: #aaa; margin-bottom: 30px; text-transform: uppercase; }
+        
+        .menu-btn {
+            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+            color: white; padding: 15px 40px; font-size: 20px; font-weight: bold; text-transform: uppercase;
+            cursor: pointer; margin: 10px; width: 300px; transition: all 0.2s; border-radius: 4px;
+        }
+        .menu-btn:hover { background: rgba(255,255,255,0.9); color: black; transform: scale(1.05); }
+        
+        .keybinds { margin-top: 40px; background: rgba(0,0,0,0.5); padding: 20px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); width: 400px;}
+        .keybinds h3 { text-align: center; margin-top: 0; color: #ddd; }
+        .keybind-row { display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.1); padding: 8px 0; font-size: 14px; }
+        .keybind-row:last-child { border-bottom: none; }
+        .keybind-key { color: #ffaa00; font-weight: bold; }
+        
+        #loading-text { font-size: 24px; animation: pulse 1.5s infinite; letter-spacing: 2px; }
+        @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
+
+        /* Settings Overlay */
+        #settings-panel { 
+            position: absolute; inset: 0; background: rgba(0,0,0,0.95); z-index: 30; 
+            display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; pointer-events: auto;
+        }
+        .setting-row { display: flex; justify-content: space-between; width: 400px; margin: 15px 0; align-items: center; font-size: 18px; }
+        input[type="range"] { width: 200px; cursor: pointer; }
+    
+          /* CoD Style UI */
+          #player-status-container {
+              position: absolute;
+              bottom: 40px;
+              left: 40px;
+              display: flex;
+              flex-direction: column;
+              gap: 5px;
+              z-index: 15;
+              display: none;
+          }
+
+          #armor-container {
+              display: flex;
+              gap: 4px;
+              height: 12px;
+          }
+
+          .armor-plate {
+              width: 40px;
+              height: 100%;
+              background: linear-gradient(180deg, #6bb9f0 0%, #3a7bd5 100%);
+              border: 1px solid rgba(255,255,255,0.8);
+              border-radius: 2px;
+              transform: skewX(-15deg);
+              box-shadow: 0 0 8px rgba(58,123,213,0.6);
+          }
+
+          #health-container {
+              width: 250px;
+              height: 16px;
+              background: rgba(0,0,0,0.7);
+              border: 2px solid rgba(255,255,255,0.3);
+              border-radius: 2px;
+              position: relative;
+              transform: skewX(-15deg);
+              overflow: hidden;
+              box-shadow: 0 0 10px rgba(0,0,0,0.8);
+          }
+
+          #health-bar-fill {
+              width: 100%;
+              height: 100%;
+              background: linear-gradient(90deg, #d32f2f 0%, #ff5252 100%);
+              transition: width 0.2s ease-out;
+          }
+
+          /* CoD Main Menu Styling */
+          .cod-title {
+              font-size: 80px;
+              font-weight: 900;
+              color: #fff;
+              margin: 0;
+              line-height: 1;
+              text-shadow: 2px 2px 0 #000, 4px 4px 10px rgba(0,0,0,0.8);
+              letter-spacing: 4px;
+          }
+
+          .cod-subtitle {
+              color: #b0bec5;
+              font-size: 24px;
+              margin-bottom: 50px;
+              letter-spacing: 6px;
+              font-weight: 600;
+          }
+
+          .cod-btn {
+              background: transparent;
+              border: none;
+              border-left: 4px solid transparent;
+              color: #fff;
+              text-align: left;
+              padding: 10px 20px;
+              font-size: 32px;
+              margin: 10px 0;
+              text-transform: uppercase;
+              width: auto;
+              transition: all 0.2s;
+              font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
+              letter-spacing: 2px;
+          }
+
+          .cod-btn:hover {
+              background: rgba(255,255,255,0.1);
+              border-left: 4px solid #ffcc00;
+              color: #ffcc00;
+              transform: translateX(10px) scale(1);
+          }
+
+          .cod-keybinds {
+              background: rgba(0, 0, 0, 0.8);
+              border-top: 4px solid #ffcc00;
+              box-shadow: 0 10px 30px rgba(0,0,0,0.9);
+          }
+
+          .cod-keybinds h3 {
+              color: #ffcc00;
+              text-transform: uppercase;
+              letter-spacing: 2px;
+          }
+
+          /* Loading Screen CoD Style */
+          #loading-screen {
+              background: #000 radial-gradient(circle, #222 0%, #000 100%);
+          }
+
+          #loading-content {
+              width: 60%;
+              max-width: 800px;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+          }
+
+          #loading-title {
+              font-size: 32px;
+              color: #ffcc00;
+              letter-spacing: 8px;
+              margin-bottom: 20px;
+              font-weight: bold;
+              text-shadow: 0 0 10px rgba(255,204,0,0.5);
+              animation: pulse 1.5s infinite;
+          }
+
+          #loading-bar-container {
+              width: 100%;
+              height: 4px;
+              background: rgba(255,255,255,0.2);
+              position: relative;
+              overflow: hidden;
+              margin-bottom: 10px;
+          }
+
+          #loading-bar {
+              width: 0%;
+              height: 100%;
+              background: #ffcc00;
+              box-shadow: 0 0 10px #ffcc00;
+              transition: width 0.1s linear;
+          }
+
+          #loading-percentage {
+              font-size: 18px;
+              color: #aaa;
+              align-self: flex-end;
+              font-family: monospace;
+          }
+  
+    </style>
+    <script async src="https://unpkg.com/es-module-shims@1.8.0/dist/es-module-shims.js"></script>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+<body>
+    <!-- UI Layer -->
+    <div id="ui-layer">
+        <div id="stamina-container">
+            <div id="stamina-bar"></div>
+        </div>
+        <div id="ammo-container" style="display: none;">
+            <span id="ammo-current">30</span><span style="font-size: 24px; color: #aaa;"> / 30</span>
+        </div>
+        <div id="crosshair"></div>
+    </div>
+
+    <!-- Menus -->
+    
+      <div id="loading-screen" class="screen">
+          <div id="loading-content">
+              <div id="loading-title">LOADING ASSETS</div>
+              <div id="loading-bar-container">
+                  <div id="loading-bar"></div>
+              </div>
+              <div id="loading-percentage">0%</div>
+          </div>
+      </div>
+  
+    </div>
+
+    <div id="home-screen" class="screen hidden" style="align-items: flex-start; padding-left: 10%; background: radial-gradient(circle at 70% 50%, rgba(50,50,50,0.8), rgba(0,0,0,0.95));">
+          <div class="menu-content" style="z-index: 2;">
+              <h1 class="cod-title">ROTSTORM</h1>
+              <h2 class="cod-subtitle">5.0 EDITION</h2>
+              
+              <div class="menu-options" style="display: flex; flex-direction: column; align-items: flex-start; margin-top: 40px;">
+                  <button class="menu-btn cod-btn" id="btn-play">DEPLOY</button>
+                  <button class="menu-btn cod-btn" id="btn-settings-home">OPERATOR SETTINGS</button>
+              </div>
+              
+              <div class="keybinds cod-keybinds" style="position: absolute; right: 10%; top: 50%; transform: translateY(-50%); width: 350px;">
+                  <h3>TACTICAL CONTROLS</h3>
+                  <div class="keybind-row"><span class="keybind-key">W A S D</span><span>Move</span></div>
+                  <div class="keybind-row"><span class="keybind-key">Space</span><span>Jump</span></div>
+                  <div class="keybind-row"><span class="keybind-key">Shift</span><span>Sprint</span></div>
+                  <div class="keybind-row"><span class="keybind-key">Z (Hold)</span><span>Crouch</span></div>
+                  <div class="keybind-row"><span class="keybind-key">Sprint + Z</span><span>Tactical Slide</span></div>
+                  <div class="keybind-row"><span class="keybind-key">Left Click</span><span>Fire Weapon</span></div>
+                  <div class="keybind-row"><span class="keybind-key">R</span><span>Reload</span></div>
+                  <div class="keybind-row"><span class="keybind-key">I</span><span>Inspect Weapon</span></div>
+                  <div class="keybind-row"><span class="keybind-key">Esc</span><span>Pause Menu</span></div>
+              </div>
+          </div>
+      </div>
+  
+    </div>
+
+    <div id="pause-screen" class="screen hidden">
+        <h1>PAUSED</h1>
+        <button class="menu-btn" id="btn-resume">Resume</button>
+        <button class="menu-btn" id="btn-settings-pause">Settings</button>
+        <button class="menu-btn" id="btn-exit">Exit to Home</button>
+    </div>
+
+    <div id="settings-panel" class="hidden">
+        <h1>SETTINGS</h1>
+        <div class="setting-row">
+            <label>Sensitivity</label>
+            <input type="range" id="sens-slider" min="0.1" max="5.0" step="0.1" value="1.0">
+        </div>
+        <div class="setting-row">
+            <label>Volume</label>
+            <input type="range" id="vol-slider" min="0.0" max="1.0" step="0.05" value="1.0">
+        </div>
+        <button class="menu-btn" id="btn-close-settings" style="margin-top: 40px;">Back</button>
+    </div>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+        import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
+
+        let camera, scene, renderer, controls;
+        let mixer, actions = {};
+        let activeAction, previousAction;
+        let clock = new THREE.Clock();
+
+        // Game State Variables
+        let gameState = 'LOADING'; // LOADING, HOME, PLAYING, PAUSED
+        
+        // Input state
+        const keys = { KeyW: false, KeyA: false, KeyS: false, KeyD: false, Space: false, ShiftLeft: false, ShiftRight: false, KeyZ: false };
+        let isShooting = false, isReloading = false, isInspecting = false;
+        
+        // Movement Mechanics
+        let canJump = false;
+        let isRunning = false;
+        let isCrouching = false;
+        let isSliding = false;
+        let slideTimer = 0;
+        let initialSlideYaw = 0;
+        let baseHeightOffset = 1.7; // Standard camera height
+        const velocity = new THREE.Vector3();
+        const direction = new THREE.Vector3();
+        const slideDirection = new THREE.Vector3();
+
+        // Stamina System
+        let stamina = 100;
+        let isStaminaExhausted = false;
+        const STAMINA_DRAIN = 25; // Units per second
+        const STAMINA_RECOVER = 15; // Units per second
+        const SLIDE_COST = 5; // Flat cost to initiate slide
+        
+        // Ammo System
+        const MAX_AMMO = 30;
+        let ammo = MAX_AMMO;
+
+        // UI Elements
+        const loadingScreen = document.getElementById('loading-screen');
+        const homeScreen = document.getElementById('home-screen');
+        const pauseScreen = document.getElementById('pause-screen');
+        const settingsPanel = document.getElementById('settings-panel');
+        const crosshair = document.getElementById('crosshair');
+        const stBar = document.getElementById('stamina-bar');
+        const stContainer = document.getElementById('stamina-container');
+        const ammoContainer = document.getElementById('ammo-container');
+          const playerStatus = document.getElementById('player-status-container');
+          let cameraTilt = 0;
+        const ammoCurrent = document.getElementById('ammo-current');
+
+        // Audio System
+        const gunSoundUrl = 'https://raw.githubusercontent.com/Ren23447/Rotstorm-FPS/main/Gunshot.mp3';
+        let masterVolume = 0.4;
+        
+        // Projectile System
+        const bullets = [];
+        const collidableMeshes = [];
+        const bulletGeometry = new THREE.SphereGeometry(0.055, 8, 8);
+        const bulletMaterial = new THREE.MeshBasicMaterial({ color: 0xffaa00 });
+        const bulletRaycaster = new THREE.Raycaster();
+
+        function updateAmmoUI() {
+            if (ammoCurrent) {
+                ammoCurrent.innerText = ammo;
+                ammoCurrent.style.color = ammo <= 10 ? '#ff4444' : '#ffffff';
+            }
+        }
+
+        init();
+        animate();
+
+        function init() {
+            scene = new THREE.Scene();
+            
+            // Skybox
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            img.src = 'https://raw.githubusercontent.com/Ren23447/Rotstorm-FPS/refs/heads/main/skyboxRS.jpg';
+            img.onload = function() {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                const tileW = img.width / 4;
+                const tileH = img.height / 3;
+                canvas.width = tileW;
+                canvas.height = tileH;
+
+                const extractFace = (x, y) => {
+                    ctx.drawImage(img, x * tileW, y * tileH, tileW, tileH, 0, 0, tileW, tileH);
+                    return canvas.toDataURL('image/jpeg', 1.0);
+                };
+
+                const faces = [ extractFace(2, 1), extractFace(0, 1), extractFace(1, 0), extractFace(1, 2), extractFace(1, 1), extractFace(3, 1) ];
+                scene.background = new THREE.CubeTextureLoader().load(faces);
+            };
+            
+            scene.fog = new THREE.Fog(0x222222, 10, 150);
+
+            // Lighting & Shadows
+            scene.add(new THREE.AmbientLight(0xffffff, 0.4));
+            const dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
+            dirLight.position.set(20, 50, 20);
+            dirLight.castShadow = true;
+            dirLight.shadow.mapSize.width = 2048;
+            dirLight.shadow.mapSize.height = 2048;
+            dirLight.shadow.camera.near = 0.5;
+            dirLight.shadow.camera.far = 150;
+            dirLight.shadow.camera.left = -50;
+            dirLight.shadow.camera.right = 50;
+            dirLight.shadow.camera.top = 50;
+            dirLight.shadow.camera.bottom = -50;
+            dirLight.shadow.bias = -0.0005;
+            scene.add(dirLight);
+
+            // Floor
+            const floorGeometry = new THREE.PlaneGeometry(200, 200);
+            const floorMaterial = new THREE.MeshStandardMaterial({ color: 0x444444, roughness: 0.8, metalness: 0.2 });
+            const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+            floor.rotation.x = -Math.PI / 2;
+            floor.receiveShadow = true;
+            scene.add(floor);
+            collidableMeshes.push(floor);
+
+            // Grid Layout slightly above floor to prevent Z-fighting
+            
+            
+            // Random Boxes with shadows
+            for(let i=0; i<40; i++) {
+                const height = Math.random() * 3 + 1;
+                const box = new THREE.Mesh(
+                    new THREE.BoxGeometry(2, height, 2), 
+                    new THREE.MeshStandardMaterial({ color: 0x882222, roughness: 0.7 })
+                );
+                box.position.set((Math.random() - 0.5) * 60, height / 2, (Math.random() - 0.5) * 60);
+                box.castShadow = true;
+                box.receiveShadow = true;
+                scene.add(box);
+                collidableMeshes.push(box);
+            }
+
+            // Camera Setup
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.y = baseHeightOffset;
+
+            controls = new PointerLockControls(camera, document.body);
+            scene.add(controls.getObject());
+
+            // Menu Interactions
+            document.getElementById('btn-play').addEventListener('click', () => { controls.lock(); });
+            document.getElementById('btn-resume').addEventListener('click', () => { controls.lock(); });
+            document.getElementById('btn-exit').addEventListener('click', () => {
+                gameState = 'HOME';
+                pauseScreen.classList.add('hidden');
+                homeScreen.classList.remove('hidden');
+            });
+
+            let prevGameState = 'HOME';
+            document.getElementById('btn-settings-home').addEventListener('click', () => {
+                prevGameState = 'HOME';
+                homeScreen.classList.add('hidden');
+                settingsPanel.classList.remove('hidden');
+            });
+            document.getElementById('btn-settings-pause').addEventListener('click', () => {
+                prevGameState = 'PAUSED';
+                pauseScreen.classList.add('hidden');
+                settingsPanel.classList.remove('hidden');
+            });
+            document.getElementById('btn-close-settings').addEventListener('click', () => {
+                settingsPanel.classList.add('hidden');
+                if (prevGameState === 'HOME') homeScreen.classList.remove('hidden');
+                if (prevGameState === 'PAUSED') pauseScreen.classList.remove('hidden');
+            });
+            document.getElementById('sens-slider').addEventListener('input', (e) => {
+                if (controls.pointerSpeed !== undefined) {
+                    controls.pointerSpeed = parseFloat(e.target.value);
+                }
+            });
+            
+            // Audio Volume Slider
+            document.getElementById('vol-slider').addEventListener('input', (e) => {
+                masterVolume = parseFloat(e.target.value);
+            });
+
+            controls.addEventListener('lock', () => {
+                gameState = 'PLAYING';
+                homeScreen.classList.add('hidden');
+                pauseScreen.classList.add('hidden');
+                crosshair.style.display = 'block';
+                ammoContainer.style.display = 'block';
+                updateAmmoUI();
+            });
+            controls.addEventListener('unlock', () => {
+                if (gameState === 'PLAYING') {
+                    gameState = 'PAUSED';
+                    crosshair.style.display = 'none';
+                    ammoContainer.style.display = 'none';
+                    pauseScreen.classList.remove('hidden');
+                }
+            });
+
+            // Renderer Setup
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            document.body.appendChild(renderer.domElement);
+
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+
+            // Load Model & Animations
+            new GLTFLoader().load('https://raw.githubusercontent.com/Ren23447/Rotstorm-FPS/main/smg_fps_animations.glb', (gltf) => {
+                const model = gltf.scene;
+                camera.add(model);
+                
+                model.position.set(-0.01, -0.63, -0.01);
+                model.rotation.y = Math.PI;
+
+                mixer = new THREE.AnimationMixer(model);
+                const anims = gltf.animations;
+                
+                // Inspect added alongside others
+                const animNames = {
+                    "idle":"Rig|KDW_DPose_Idle",
+                    "walk":"Rig|KDW_Walk",
+                    "run":"Rig|KDW_Run",
+                    "shoot":"Rig|KDW_Shot",
+                    "reload":"Rig|KDW_Reload_fast",
+                    "inspect":"Rig|KDW_Inspect"
+                };
+
+                for(let key in animNames) {
+                    if(animNames[key]) {
+                        const clip = anims.find(a => a.name === animNames[key]);
+                        if(clip) {
+                            actions[key] = mixer.clipAction(clip);
+                            if(key === 'shoot' || key === 'reload' || key === 'inspect') {
+                                actions[key].setLoop(THREE.LoopOnce, 0);
+                                actions[key].clampWhenFinished = true;
+                            }
+                        }
+                    }
+                }
+
+                mixer.addEventListener('finished', (e) => {
+                    if (e.action === actions['shoot']) { isShooting = false; updateAction(); }
+                    if (e.action === actions['reload']) { 
+                        isReloading = false; 
+                        ammo = MAX_AMMO;
+                        updateAmmoUI();
+                        updateAction(); 
+                    }
+                    if (e.action === actions['inspect']) { isInspecting = false; updateAction(); }
+                });
+
+                if(actions['idle']) fadeToAction('idle', 0);
+                
+                // Initialize Game
+                loadingScreen.classList.add('hidden');
+                homeScreen.classList.remove('hidden');
+                gameState = 'HOME';
+              },
+              (xhr) => {
+                  if (xhr.lengthComputable) {
+                      const percent = Math.floor((xhr.loaded / xhr.total) * 100);
+                      document.getElementById('loading-bar').style.width = percent + '%';
+                      document.getElementById('loading-percentage').innerText = percent + '%';
+                  }
+              },
+              (error) => {
+                  console.error('An error happened', error);
+              });
+
+            // Input Listeners
+            document.addEventListener('keydown', (e) => {
+                if (keys.hasOwnProperty(e.code)) keys[e.code] = true;
+
+                if (gameState !== 'PLAYING') return;
+
+                if (e.code === 'KeyR' && !isReloading && !isShooting && !isInspecting && actions['reload']) {
+                    if (ammo <= 29) { // Can only reload if ammo is 10 or under
+                        isReloading = true;
+                        actions['reload'].reset();
+                        fadeToAction('reload', 0.2);
+                    }
+                }
+
+                // Check for 'I' key for inspect
+                if (e.code === 'KeyI' && !isReloading && !isShooting && !isInspecting && actions['inspect']) {
+                    isInspecting = true;
+                    actions['inspect'].reset();
+                    fadeToAction('inspect', 0.2);
+                }
+
+                if (e.code === 'KeyZ') {
+                    // Check for slide criteria
+                    isRunning = keys.ShiftLeft || keys.ShiftRight;
+                    if (isRunning && !isStaminaExhausted && !isSliding && stamina >= SLIDE_COST && canJump) {
+                        isSliding = true;
+                        slideTimer = 2.0;
+                        stamina = Math.max(0, stamina - SLIDE_COST);
+                        if (stamina === 0) isStaminaExhausted = true;
+                        
+                        // Capture the direction we are facing to continue sliding that way
+                        camera.getWorldDirection(slideDirection);
+                        slideDirection.y = 0;
+                        if (slideDirection.lengthSq() > 0) {
+                            slideDirection.normalize();
+                        } else {
+                            slideDirection.set(0, 0, -1);
+                        }
+                        
+                        // Capture initial yaw for camera clamping
+                        const euler = new THREE.Euler(0, 0, 0, 'YXZ');
+                        euler.setFromQuaternion(camera.quaternion);
+                        initialSlideYaw = euler.y;
+                    } else if (!isSliding) {
+                        isCrouching = true;
+                    }
+                }
+            });
+
+            document.addEventListener('keyup', (e) => {
+                if (keys.hasOwnProperty(e.code)) keys[e.code] = false;
+                if (e.code === 'KeyZ') isCrouching = false;
+            });
+
+            document.addEventListener('mousedown', (e) => {
+                if (gameState !== 'PLAYING') return;
+                if (e.button === 0 && !isShooting && !isReloading && !isInspecting && actions['shoot']) {
+                    if (ammo > 0) {
+                        ammo--;
+                        updateAmmoUI();
+                        isShooting = true;
+                        actions['shoot'].reset();
+                        fadeToAction('shoot', 0.1);
+                        
+                        // Play Gun Sound
+                        const audio = new Audio(gunSoundUrl);
+                        audio.volume = masterVolume;
+                        audio.play().catch(e => console.log('Audio play failed:', e));
+                        
+                        // Spawn Bullet
+                        spawnBullet();
+                    }
+                }
+            });
+        }
+        
+        function spawnBullet() {
+            const bullet = new THREE.Mesh(bulletGeometry, bulletMaterial);
+            
+            // Get bullet spawn position and direction
+            const shootDirection = new THREE.Vector3();
+            camera.getWorldDirection(shootDirection);
+            shootDirection.normalize();
+            
+            // Start from camera position, slightly offset forwards and downwards to match gun roughly
+            bullet.position.copy(camera.position);
+            bullet.position.addScaledVector(shootDirection, 1.0);
+            bullet.position.y -= 0.1;
+            
+            scene.add(bullet);
+            
+            const bulletVelocity = shootDirection.multiplyScalar(500.0); // 80 units per second velocity
+            
+            bullets.push({
+                mesh: bullet,
+                velocity: bulletVelocity,
+                life: 7.0 // 3 seconds max lifetime
+            });
+        }
+
+        function updateAction() {
+            if (isShooting || isReloading || isInspecting) return;
+            
+            let target = 'idle';
+            const isMoving = keys.KeyW || keys.KeyS || keys.KeyA || keys.KeyD;
+            isRunning = keys.ShiftLeft || keys.ShiftRight;
+
+            if (isMoving) {
+                if (isSliding) {
+                    target = 'run'; // or crouch walk if it exists. Fallback to run or walk
+                } else if (isCrouching) {
+                    target = 'walk'; 
+                } else if (isRunning && !isStaminaExhausted) {
+                    target = 'run';
+                } else {
+                    target = 'walk';
+                }
+            }
+            if (actions[target] && target !== getActiveActionName()) fadeToAction(target, 0.2);
+        }
+
+        function getActiveActionName() {
+            for (let key in actions) if (actions[key] === activeAction) return key;
+            return null;
+        }
+
+        function fadeToAction(name, duration) {
+            if (!actions[name]) return;
+            previousAction = activeAction;
+            activeAction = actions[name];
+            if (previousAction && previousAction !== activeAction) previousAction.fadeOut(duration);
+            activeAction.reset().setEffectiveTimeScale(1).setEffectiveWeight(1).fadeIn(duration).play();
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const dt = Math.min(clock.getDelta(), 0.1); // Clamp delta to prevent huge jumps
+
+            if (mixer) mixer.update(dt);
+
+            if (gameState === 'PLAYING') {
+                let moveForward = keys.KeyW;
+                let moveBackward = keys.KeyS;
+                let moveLeft = keys.KeyA;
+                let moveRight = keys.KeyD;
+                isRunning = keys.ShiftLeft || keys.ShiftRight;
+                const isMoving = moveForward || moveBackward || moveLeft || moveRight;
+
+                // Stamina processing
+                if (isMoving && isRunning && !isCrouching && !isSliding && !isStaminaExhausted) {
+                    stamina -= STAMINA_DRAIN * dt;
+                    if (stamina <= 0) {
+                        stamina = 0;
+                        isStaminaExhausted = true;
+                    }
+                } else if (!isSliding) {
+                    stamina += STAMINA_RECOVER * dt;
+                    if (stamina >= 100) {
+                        stamina = 100;
+                        isStaminaExhausted = false; // fully filled to run again
+                    }
+                }
+
+                // UI update for Stamina
+                stBar.style.width = stamina + '%';
+                stBar.style.backgroundColor = isStaminaExhausted ? '#ff4444' : '#ffffff';
+                stContainer.style.display = stamina < 100 ? 'block' : 'none';
+
+                // Slide processing
+                if (isSliding) {
+                    slideTimer -= dt;
+                    if (slideTimer <= 0) {
+                        isSliding = false;
+                        // Transition to crouch if still holding Z
+                        isCrouching = keys.KeyZ;
+                    }
+                    
+                    // Restrict view radius to 136 degrees total (68 deg each way) during slide
+                    const euler = new THREE.Euler(0, 0, 0, 'YXZ');
+                    euler.setFromQuaternion(camera.quaternion);
+                    let deltaYaw = euler.y - initialSlideYaw;
+                    while (deltaYaw > Math.PI) deltaYaw -= Math.PI * 2;
+                    while (deltaYaw < -Math.PI) deltaYaw += Math.PI * 2;
+                    const maxDelta = 68 * (Math.PI / 180);
+                    if (deltaYaw > maxDelta) {
+                        euler.y = initialSlideYaw + maxDelta;
+                        camera.quaternion.setFromEuler(euler);
+                    } else if (deltaYaw < -maxDelta) {
+                        euler.y = initialSlideYaw - maxDelta;
+                        camera.quaternion.setFromEuler(euler);
+                    }
+                }
+
+                updateAction();
+
+                direction.z = Number(moveForward) - Number(moveBackward);
+                direction.x = Number(moveRight) - Number(moveLeft);
+                direction.normalize();
+
+                let currentSpeed = 25.0; // Walk
+                if (isCrouching) currentSpeed = 10.0; // Crouch speed
+                else if (isRunning && !isStaminaExhausted) currentSpeed = 50.0; // Sprint speed
+                
+                if (isSliding) {
+                    // Realistic slide: gradual stop from 15 down to 5
+                    currentSpeed = 1.0 + (20.0 * (slideTimer / 5.0)); 
+                    
+                    // Decelerate internal velocity quickly so we don't snap back to normal speed unexpectedly 
+                    velocity.x -= velocity.x * 10.0 * dt;
+                    velocity.z -= velocity.z * 10.0 * dt;
+
+                    // Move primarily in the captured world direction
+                    controls.getObject().position.addScaledVector(slideDirection, currentSpeed * dt);
+                    
+                    // Barely move left/right relative to look direction (strafe)
+                    const strafe = (Number(moveRight) - Number(moveLeft)) * 0.15 * currentSpeed;
+                    controls.moveRight(strafe * dt);
+                } else {
+                    velocity.x -= velocity.x * 6.5 * dt;
+                    velocity.z -= velocity.z * 6.5 * dt;
+                    
+                    if (moveForward || moveBackward) velocity.z -= direction.z * currentSpeed * dt;
+                    if (moveLeft || moveRight) velocity.x -= direction.x * currentSpeed * dt;
+
+                    controls.moveRight(-velocity.x * dt);
+                    controls.moveForward(-velocity.z * dt);
+                }
+
+                // Jump trigger
+                if (keys.Space && canJump && !isCrouching && !isSliding) {
+                    velocity.y = 12.0; // Scaled realistic jump velocity
+                    canJump = false;
+                    keys.Space = false; // Consume the keypress
+                }
+                
+                // Vertical Physics & Height Adjustments
+                let targetHeight = (isCrouching || isSliding) ? 0.8 : 1.7;
+                let oldBaseHeight = baseHeightOffset;
+                baseHeightOffset += (targetHeight - baseHeightOffset) * 15.0 * dt; // Smooth transition
+                
+                // Keep the camera strictly tracking the ground if we are technically grounded
+                if (canJump) {
+                    controls.getObject().position.y += (baseHeightOffset - oldBaseHeight);
+                }
+
+                // Apply Gravity (adjusted to be more realistic with the jump velocity)
+                velocity.y -= 9.8 * 4.0 * dt; 
+                controls.getObject().position.y += velocity.y * dt;
+
+                // Floor Collision
+                if (controls.getObject().position.y <= baseHeightOffset) {
+                    velocity.y = Math.max(0, velocity.y); // Prevent sticky negative velocity
+                    controls.getObject().position.y = baseHeightOffset;
+                    canJump = true;
+                } else if (controls.getObject().position.y > baseHeightOffset + 0.05) {
+                    canJump = false; // We are airborne
+                }
+                
+                // Update Bullets Physics
+                for (let i = bullets.length - 1; i >= 0; i--) {
+                    const b = bullets[i];
+                    b.life -= dt;
+                    if (b.life <= 0) {
+                        scene.remove(b.mesh);
+                        bullets.splice(i, 1);
+                        continue;
+                    }
+                    
+                    // Raycast for bullet collision
+                    const movementVector = b.velocity.clone().multiplyScalar(dt);
+                    const movementDistance = movementVector.length();
+                    const rayDirection = b.velocity.clone().normalize();
+                    
+                    bulletRaycaster.set(b.mesh.position, rayDirection);
+                    bulletRaycaster.far = movementDistance;
+                    
+                    const intersects = bulletRaycaster.intersectObjects(collidableMeshes);
+                    
+                    if (intersects.length > 0) {
+                        // Bullet hit something
+                        b.mesh.position.copy(intersects[0].point);
+                        scene.remove(b.mesh);
+                        bullets.splice(i, 1);
+                        
+                        // Optionally add an impact effect or change color to show hit
+                        const hitObject = intersects[0].object;
+                        if (hitObject.geometry && hitObject.geometry.type === 'BoxGeometry') {
+                            // hitObject.material.color.setHex(Math.random() * 0xffffff); // change color on hit
+                            // make it blink white
+                            const oldColor = hitObject.material.color.getHex();
+                            hitObject.material.color.setHex(0xffffff);
+                            setTimeout(() => {
+                                if(hitObject && hitObject.material) {
+                                    hitObject.material.color.setHex(oldColor);
+                                }
+                            }, 100);
+                        }
+                    } else {
+                        // Apply gravity to bullet
+                        b.velocity.y -= 9.8 * dt; // gravity
+                        
+                        // Move bullet
+                        b.mesh.position.add(movementVector);
+                    }
+                }
+                
+                // Apply screen shake if sliding
+                let shakeX = 0, shakeY = 0, shakeZ = 0;
+                if (isSliding) {
+                    const shakeIntensity = (slideTimer / 2.0) * 0.25;
+                    shakeX = (Math.random() - 0.5) * shakeIntensity;
+                    shakeY = (Math.random() - 0.5) * shakeIntensity;
+                    shakeZ = (Math.random() - 0.5) * shakeIntensity;
+                    camera.position.x += shakeX;
+                    camera.position.y += shakeY;
+                    camera.position.z += shakeZ;
+                }
+
+                renderer.render(scene, camera);
+
+                // Restore camera position after shake
+                if (isSliding) {
+                    camera.position.x -= shakeX;
+                    camera.position.y -= shakeY;
+                    camera.position.z -= shakeZ;
+                }
+            } else {
+                renderer.render(scene, camera);
+            }
+        }
+    </script>
+</body>
+</html>
