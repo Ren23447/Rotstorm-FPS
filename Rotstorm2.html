@@ -9,7 +9,6 @@
         body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; user-select: none; }
         canvas { display: block; width: 100vw; height: 100vh; }
         
-        /* UI Overlays */
         #ui-layer { position: absolute; inset: 0; pointer-events: none; z-index: 10; display: flex; flex-direction: column; }
         
         #stamina-container {
@@ -31,7 +30,11 @@
             box-shadow: 0 0 4px rgba(0,0,0,0.8);
         }
 
-        /* Screens */
+        #controller-status {
+            position: absolute; top: 20px; left: 20px; color: #fff; font-size: 14px;
+            text-shadow: 0 0 5px rgba(0,0,0,0.8); display: none;
+        }
+
         .screen {
             position: absolute; inset: 0; background-color: rgba(0,0,0,0.85);
             display: flex; flex-direction: column; justify-content: center; align-items: center;
@@ -58,162 +61,80 @@
         #loading-text { font-size: 24px; animation: pulse 1.5s infinite; letter-spacing: 2px; }
         @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
 
-        /* Settings Overlay */
         #settings-panel { 
             position: absolute; inset: 0; background: rgba(0,0,0,0.95); z-index: 30; 
             display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; pointer-events: auto;
         }
         .setting-row { display: flex; justify-content: space-between; width: 400px; margin: 15px 0; align-items: center; font-size: 18px; }
         input[type="range"] { width: 200px; cursor: pointer; }
-    
-          /* CoD Style UI */
-          #player-status-container {
-              position: absolute;
-              bottom: 40px;
-              left: 40px;
-              display: flex;
-              flex-direction: column;
-              gap: 5px;
-              z-index: 15;
-              display: none;
-          }
+        
+        .control-toggle {
+            display: flex; gap: 10px; margin: 15px 0;
+        }
+        .control-toggle button {
+            padding: 10px 20px; border: 2px solid #fff; background: transparent; color: #fff;
+            cursor: pointer; transition: all 0.2s; border-radius: 4px;
+        }
+        .control-toggle button.active {
+            background: #ffcc00; color: #000; border-color: #ffcc00;
+        }
 
-          #armor-container {
-              display: flex;
-              gap: 4px;
-              height: 12px;
-          }
+        .cod-title {
+            font-size: 80px; font-weight: 900; color: #fff; margin: 0; line-height: 1;
+            text-shadow: 2px 2px 0 #000, 4px 4px 10px rgba(0,0,0,0.8); letter-spacing: 4px;
+        }
 
-          .armor-plate {
-              width: 40px;
-              height: 100%;
-              background: linear-gradient(180deg, #6bb9f0 0%, #3a7bd5 100%);
-              border: 1px solid rgba(255,255,255,0.8);
-              border-radius: 2px;
-              transform: skewX(-15deg);
-              box-shadow: 0 0 8px rgba(58,123,213,0.6);
-          }
+        .cod-subtitle {
+            color: #b0bec5; font-size: 24px; margin-bottom: 50px; letter-spacing: 6px; font-weight: 600;
+        }
 
-          #health-container {
-              width: 250px;
-              height: 16px;
-              background: rgba(0,0,0,0.7);
-              border: 2px solid rgba(255,255,255,0.3);
-              border-radius: 2px;
-              position: relative;
-              transform: skewX(-15deg);
-              overflow: hidden;
-              box-shadow: 0 0 10px rgba(0,0,0,0.8);
-          }
+        .cod-btn {
+            background: transparent; border: none; border-left: 4px solid transparent; color: #fff;
+            text-align: left; padding: 10px 20px; font-size: 32px; margin: 10px 0;
+            text-transform: uppercase; width: auto; transition: all 0.2s;
+            font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif; letter-spacing: 2px;
+        }
 
-          #health-bar-fill {
-              width: 100%;
-              height: 100%;
-              background: linear-gradient(90deg, #d32f2f 0%, #ff5252 100%);
-              transition: width 0.2s ease-out;
-          }
+        .cod-btn:hover {
+            background: rgba(255,255,255,0.1); border-left: 4px solid #ffcc00;
+            color: #ffcc00; transform: translateX(10px) scale(1);
+        }
 
-          /* CoD Main Menu Styling */
-          .cod-title {
-              font-size: 80px;
-              font-weight: 900;
-              color: #fff;
-              margin: 0;
-              line-height: 1;
-              text-shadow: 2px 2px 0 #000, 4px 4px 10px rgba(0,0,0,0.8);
-              letter-spacing: 4px;
-          }
+        .cod-keybinds {
+            background: rgba(0, 0, 0, 0.8); border-top: 4px solid #ffcc00;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.9);
+        }
 
-          .cod-subtitle {
-              color: #b0bec5;
-              font-size: 24px;
-              margin-bottom: 50px;
-              letter-spacing: 6px;
-              font-weight: 600;
-          }
+        .cod-keybinds h3 {
+            color: #ffcc00; text-transform: uppercase; letter-spacing: 2px;
+        }
 
-          .cod-btn {
-              background: transparent;
-              border: none;
-              border-left: 4px solid transparent;
-              color: #fff;
-              text-align: left;
-              padding: 10px 20px;
-              font-size: 32px;
-              margin: 10px 0;
-              text-transform: uppercase;
-              width: auto;
-              transition: all 0.2s;
-              font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
-              letter-spacing: 2px;
-          }
+        #loading-screen {
+            background: #000 radial-gradient(circle, #222 0%, #000 100%);
+        }
 
-          .cod-btn:hover {
-              background: rgba(255,255,255,0.1);
-              border-left: 4px solid #ffcc00;
-              color: #ffcc00;
-              transform: translateX(10px) scale(1);
-          }
+        #loading-content {
+            width: 60%; max-width: 800px; display: flex; flex-direction: column; align-items: center;
+        }
 
-          .cod-keybinds {
-              background: rgba(0, 0, 0, 0.8);
-              border-top: 4px solid #ffcc00;
-              box-shadow: 0 10px 30px rgba(0,0,0,0.9);
-          }
+        #loading-title {
+            font-size: 32px; color: #ffcc00; letter-spacing: 8px; margin-bottom: 20px;
+            font-weight: bold; text-shadow: 0 0 10px rgba(255,204,0,0.5); animation: pulse 1.5s infinite;
+        }
 
-          .cod-keybinds h3 {
-              color: #ffcc00;
-              text-transform: uppercase;
-              letter-spacing: 2px;
-          }
+        #loading-bar-container {
+            width: 100%; height: 4px; background: rgba(255,255,255,0.2);
+            position: relative; overflow: hidden; margin-bottom: 10px;
+        }
 
-          /* Loading Screen CoD Style */
-          #loading-screen {
-              background: #000 radial-gradient(circle, #222 0%, #000 100%);
-          }
+        #loading-bar {
+            width: 0%; height: 100%; background: #ffcc00; box-shadow: 0 0 10px #ffcc00;
+            transition: width 0.1s linear;
+        }
 
-          #loading-content {
-              width: 60%;
-              max-width: 800px;
-              display: flex;
-              flex-direction: column;
-              align-items: center;
-          }
-
-          #loading-title {
-              font-size: 32px;
-              color: #ffcc00;
-              letter-spacing: 8px;
-              margin-bottom: 20px;
-              font-weight: bold;
-              text-shadow: 0 0 10px rgba(255,204,0,0.5);
-              animation: pulse 1.5s infinite;
-          }
-
-          #loading-bar-container {
-              width: 100%;
-              height: 4px;
-              background: rgba(255,255,255,0.2);
-              position: relative;
-              overflow: hidden;
-              margin-bottom: 10px;
-          }
-
-          #loading-bar {
-              width: 0%;
-              height: 100%;
-              background: #ffcc00;
-              box-shadow: 0 0 10px #ffcc00;
-              transition: width 0.1s linear;
-          }
-
-          #loading-percentage {
-              font-size: 18px;
-              color: #aaa;
-              align-self: flex-end;
-              font-family: monospace;
-          }
-  
+        #loading-percentage {
+            font-size: 18px; color: #aaa; align-self: flex-end; font-family: monospace;
+        }
     </style>
     <script async src="https://unpkg.com/es-module-shims@1.8.0/dist/es-module-shims.js"></script>
     <script type="importmap">
@@ -226,7 +147,6 @@
     </script>
 </head>
 <body>
-    <!-- UI Layer -->
     <div id="ui-layer">
         <div id="stamina-container">
             <div id="stamina-bar"></div>
@@ -235,47 +155,73 @@
             <span id="ammo-current">30</span><span style="font-size: 24px; color: #aaa;"> / 30</span>
         </div>
         <div id="crosshair"></div>
+        <div id="controller-status"></div>
     </div>
 
-    <!-- Menus -->
-    
-      <div id="loading-screen" class="screen">
-          <div id="loading-content">
-              <div id="loading-title">LOADING ASSETS</div>
-              <div id="loading-bar-container">
-                  <div id="loading-bar"></div>
-              </div>
-              <div id="loading-percentage">0%</div>
-          </div>
-      </div>
-  
+    <div id="loading-screen" class="screen">
+        <div id="loading-content">
+            <div id="loading-title">LOADING ASSETS</div>
+            <div id="loading-bar-container">
+                <div id="loading-bar"></div>
+            </div>
+            <div id="loading-percentage">0%</div>
+        </div>
     </div>
 
     <div id="home-screen" class="screen hidden" style="align-items: flex-start; padding-left: 10%; background: radial-gradient(circle at 70% 50%, rgba(50,50,50,0.8), rgba(0,0,0,0.95));">
-          <div class="menu-content" style="z-index: 2;">
-              <h1 class="cod-title">ROTSTORM</h1>
-              <h2 class="cod-subtitle">5.0 EDITION</h2>
-              
-              <div class="menu-options" style="display: flex; flex-direction: column; align-items: flex-start; margin-top: 40px;">
-                  <button class="menu-btn cod-btn" id="btn-play">DEPLOY</button>
-                  <button class="menu-btn cod-btn" id="btn-settings-home">OPERATOR SETTINGS</button>
-              </div>
-              
-              <div class="keybinds cod-keybinds" style="position: absolute; right: 10%; top: 50%; transform: translateY(-50%); width: 350px;">
-                  <h3>TACTICAL CONTROLS</h3>
-                  <div class="keybind-row"><span class="keybind-key">W A S D</span><span>Move</span></div>
-                  <div class="keybind-row"><span class="keybind-key">Space</span><span>Jump</span></div>
-                  <div class="keybind-row"><span class="keybind-key">Shift</span><span>Sprint</span></div>
-                  <div class="keybind-row"><span class="keybind-key">Z (Hold)</span><span>Crouch</span></div>
-                  <div class="keybind-row"><span class="keybind-key">Sprint + Z</span><span>Tactical Slide</span></div>
-                  <div class="keybind-row"><span class="keybind-key">Left Click</span><span>Fire Weapon</span></div>
-                  <div class="keybind-row"><span class="keybind-key">R</span><span>Reload</span></div>
-                  <div class="keybind-row"><span class="keybind-key">I</span><span>Inspect Weapon</span></div>
-                  <div class="keybind-row"><span class="keybind-key">Esc</span><span>Pause Menu</span></div>
-              </div>
-          </div>
-      </div>
-  
+        <div class="menu-content" style="z-index: 2;">
+            <h1 class="cod-title">ROTSTORM</h1>
+            <h2 class="cod-subtitle">5.0 EDITION</h2>
+            
+            <div class="menu-options" style="display: flex; flex-direction: column; align-items: flex-start; margin-top: 40px;">
+                <button class="menu-btn cod-btn" id="btn-play">DEPLOY</button>
+                <button class="menu-btn cod-btn" id="btn-controls">CONTROLS</button>
+                <button class="menu-btn cod-btn" id="btn-settings-home">OPERATOR SETTINGS</button>
+            </div>
+            
+            <div class="keybinds cod-keybinds" style="position: absolute; right: 10%; top: 50%; transform: translateY(-50%); width: 350px;">
+                <h3>TACTICAL CONTROLS</h3>
+                <div class="keybind-row"><span class="keybind-key">W A S D</span><span>Move</span></div>
+                <div class="keybind-row"><span class="keybind-key">Space</span><span>Jump</span></div>
+                <div class="keybind-row"><span class="keybind-key">Shift</span><span>Sprint</span></div>
+                <div class="keybind-row"><span class="keybind-key">Z (Hold)</span><span>Crouch</span></div>
+                <div class="keybind-row"><span class="keybind-key">Sprint + Z</span><span>Tactical Slide</span></div>
+                <div class="keybind-row"><span class="keybind-key">Left Click</span><span>Fire Weapon</span></div>
+                <div class="keybind-row"><span class="keybind-key">R</span><span>Reload</span></div>
+                <div class="keybind-row"><span class="keybind-key">Esc</span><span>Pause Menu</span></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="controls-screen" class="screen hidden">
+        <h1>CONTROLS</h1>
+        <div class="control-toggle">
+            <button id="btn-keyboard" class="active">KEYBOARD</button>
+            <button id="btn-controller">PS5 CONTROLLER</button>
+        </div>
+        <div id="keyboard-controls" class="keybinds">
+            <h3>KEYBOARD CONTROLS</h3>
+            <div class="keybind-row"><span class="keybind-key">W A S D</span><span>Move</span></div>
+            <div class="keybind-row"><span class="keybind-key">Mouse</span><span>Look Around</span></div>
+            <div class="keybind-row"><span class="keybind-key">Space</span><span>Jump</span></div>
+            <div class="keybind-row"><span class="keybind-key">Shift</span><span>Sprint</span></div>
+            <div class="keybind-row"><span class="keybind-key">Z</span><span>Crouch / Slide</span></div>
+            <div class="keybind-row"><span class="keybind-key">Left Click</span><span>Shoot</span></div>
+            <div class="keybind-row"><span class="keybind-key">R</span><span>Reload</span></div>
+            <div class="keybind-row"><span class="keybind-key">I</span><span>Inspect Weapon</span></div>
+        </div>
+        <div id="controller-controls" class="keybinds hidden">
+            <h3>PS5 CONTROLLER</h3>
+            <div class="keybind-row"><span class="keybind-key">Left Stick</span><span>Move</span></div>
+            <div class="keybind-row"><span class="keybind-key">Right Stick</span><span>Look Around</span></div>
+            <div class="keybind-row"><span class="keybind-key">X Button</span><span>Jump</span></div>
+            <div class="keybind-row"><span class="keybind-key">L3 (Click)</span><span>Sprint</span></div>
+            <div class="keybind-row"><span class="keybind-key">Circle</span><span>Crouch / Slide</span></div>
+            <div class="keybind-row"><span class="keybind-key">R2 Trigger</span><span>Shoot</span></div>
+            <div class="keybind-row"><span class="keybind-key">Square</span><span>Reload</span></div>
+            <div class="keybind-row"><span class="keybind-key">Triangle</span><span>Inspect Weapon</span></div>
+        </div>
+        <button class="menu-btn" id="btn-controls-back" style="margin-top: 30px;">Back</button>
     </div>
 
     <div id="pause-screen" class="screen hidden">
@@ -290,6 +236,10 @@
         <div class="setting-row">
             <label>Sensitivity</label>
             <input type="range" id="sens-slider" min="0.1" max="5.0" step="0.1" value="1.0">
+        </div>
+        <div class="setting-row">
+            <label>Controller Sensitivity</label>
+            <input type="range" id="cont-sens-slider" min="0.1" max="5.0" step="0.1" value="1.0">
         </div>
         <div class="setting-row">
             <label>Volume</label>
@@ -308,59 +258,60 @@
         let activeAction, previousAction;
         let clock = new THREE.Clock();
 
-        // Game State Variables
-        let gameState = 'LOADING'; // LOADING, HOME, PLAYING, PAUSED
+        let gameState = 'LOADING';
         
-        // Input state
         const keys = { KeyW: false, KeyA: false, KeyS: false, KeyD: false, Space: false, ShiftLeft: false, ShiftRight: false, KeyZ: false };
         let isShooting = false, isReloading = false, isInspecting = false;
         
-        // Movement Mechanics
         let canJump = false;
         let isRunning = false;
         let isCrouching = false;
         let isSliding = false;
         let slideTimer = 0;
         let initialSlideYaw = 0;
-        let baseHeightOffset = 1.7; // Standard camera height
+        let baseHeightOffset = 1.7;
         const velocity = new THREE.Vector3();
         const direction = new THREE.Vector3();
         const slideDirection = new THREE.Vector3();
 
-        // Stamina System
         let stamina = 100;
         let isStaminaExhausted = false;
-        const STAMINA_DRAIN = 25; // Units per second
-        const STAMINA_RECOVER = 15; // Units per second
-        const SLIDE_COST = 5; // Flat cost to initiate slide
+        const STAMINA_DRAIN = 25;
+        const STAMINA_RECOVER = 15;
+        const SLIDE_COST = 5;
         
-        // Ammo System
         const MAX_AMMO = 30;
         let ammo = MAX_AMMO;
 
-        // UI Elements
         const loadingScreen = document.getElementById('loading-screen');
         const homeScreen = document.getElementById('home-screen');
+        const controlsScreen = document.getElementById('controls-screen');
         const pauseScreen = document.getElementById('pause-screen');
         const settingsPanel = document.getElementById('settings-panel');
         const crosshair = document.getElementById('crosshair');
         const stBar = document.getElementById('stamina-bar');
         const stContainer = document.getElementById('stamina-container');
         const ammoContainer = document.getElementById('ammo-container');
-          const playerStatus = document.getElementById('player-status-container');
-          let cameraTilt = 0;
         const ammoCurrent = document.getElementById('ammo-current');
+        const controllerStatus = document.getElementById('controller-status');
 
-        // Audio System
         const gunSoundUrl = 'https://raw.githubusercontent.com/Ren23447/Rotstorm-FPS/main/Gunshot.mp3';
-        let masterVolume = 0.4;
+        let masterVolume = 1.0;
         
-        // Projectile System
         const bullets = [];
         const collidableMeshes = [];
         const bulletGeometry = new THREE.SphereGeometry(0.055, 8, 8);
         const bulletMaterial = new THREE.MeshBasicMaterial({ color: 0xffaa00 });
         const bulletRaycaster = new THREE.Raycaster();
+
+        let currentGamepad = null;
+        let useController = false;
+        let cameraTilt = 0;
+        let controllerSensitivity = 1.0;
+        let gamepadJumpPressed = false;
+
+        const PLAYER_COLLISION_RADIUS = 0.5;
+        const PLAYER_COLLISION_HEIGHT = 1.7;
 
         function updateAmmoUI() {
             if (ammoCurrent) {
@@ -369,13 +320,138 @@
             }
         }
 
+        function pollGamepads() {
+            const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
+            for (let i = 0; i < gamepads.length; i++) {
+                if (gamepads[i]) {
+                    currentGamepad = gamepads[i];
+                    break;
+                }
+            }
+        }
+
+        function handleGamepadInput(dt) {
+            if (!currentGamepad || !useController) return;
+
+            pollGamepads();
+            if (!currentGamepad) return;
+
+            const axes = currentGamepad.axes;
+            const buttons = currentGamepad.buttons;
+
+            const leftStickX = Math.abs(axes[0]) > 0.15 ? axes[0] : 0;
+            const leftStickY = Math.abs(axes[1]) > 0.15 ? axes[1] : 0;
+            const rightStickX = Math.abs(axes[2]) > 0.15 ? axes[2] : 0;
+            const rightStickY = Math.abs(axes[3]) > 0.15 ? axes[3] : 0;
+
+            keys.KeyW = leftStickY < -0.15;
+            keys.KeyS = leftStickY > 0.15;
+            keys.KeyA = leftStickX < -0.15;
+            keys.KeyD = leftStickX > 0.15;
+
+            if (gameState === 'PLAYING') {
+                const baseLookSpeed = 0.04;
+                const lookSpeed = baseLookSpeed * controllerSensitivity;
+
+                const euler = new THREE.Euler(0, 0, 0, 'YXZ');
+                euler.setFromQuaternion(camera.quaternion);
+                euler.y -= rightStickX * lookSpeed;
+                euler.x -= rightStickY * lookSpeed;
+                euler.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, euler.x));
+                camera.quaternion.setFromEuler(euler);
+
+                if (buttons[0] && buttons[0].pressed) {
+                    if (!gamepadJumpPressed) {
+                        keys.Space = true;
+                        gamepadJumpPressed = true;
+                    }
+                } else {
+                    gamepadJumpPressed = false;
+                }
+
+                if (buttons[10] && buttons[10].pressed) {
+                    keys.ShiftLeft = true;
+                } else {
+                    keys.ShiftLeft = false;
+                }
+
+                if (buttons[1] && buttons[1].pressed && !isCrouching && !isSliding) {
+                    keys.KeyZ = true;
+                    isRunning = keys.ShiftLeft;
+                    if (isRunning && !isStaminaExhausted && stamina >= SLIDE_COST && canJump) {
+                        isSliding = true;
+                        slideTimer = 2.0;
+                        stamina = Math.max(0, stamina - SLIDE_COST);
+                        if (stamina === 0) isStaminaExhausted = true;
+                        
+                        camera.getWorldDirection(slideDirection);
+                        slideDirection.y = 0;
+                        if (slideDirection.lengthSq() > 0) {
+                            slideDirection.normalize();
+                        } else {
+                            slideDirection.set(0, 0, -1);
+                        }
+                        
+                        const euler = new THREE.Euler(0, 0, 0, 'YXZ');
+                        euler.setFromQuaternion(camera.quaternion);
+                        initialSlideYaw = euler.y;
+                    } else if (!isSliding) {
+                        isCrouching = true;
+                    }
+                } else if (!buttons[1].pressed) {
+                    keys.KeyZ = false;
+                    if (!isSliding) isCrouching = false;
+                }
+
+                if (buttons[7] && buttons[7].pressed && buttons[7].value > 0.5) {
+                    if (!isShooting && !isReloading && !isInspecting && actions['shoot'] && ammo > 0) {
+                        ammo--;
+                        updateAmmoUI();
+                        isShooting = true;
+                        actions['shoot'].reset();
+                        fadeToAction('shoot', 0.1);
+                        
+                        const audio = new Audio(gunSoundUrl);
+                        audio.volume = masterVolume;
+                        audio.play().catch(e => console.log('Audio play failed:', e));
+                        
+                        spawnBullet();
+                    }
+                }
+
+                if (buttons[2] && buttons[2].pressed && !isReloading && !isShooting && !isInspecting && actions['reload']) {
+                    if (ammo <= 29) {
+                        isReloading = true;
+                        actions['reload'].reset();
+                        fadeToAction('reload', 0.2);
+                    }
+                }
+
+                if (buttons[3] && buttons[3].pressed && !isReloading && !isShooting && !isInspecting && actions['inspect']) {
+                    isInspecting = true;
+                    actions['inspect'].reset();
+                    fadeToAction('inspect', 0.2);
+                }
+            }
+        }
+
+        window.addEventListener('gamepadconnected', (e) => {
+            console.log('Gamepad connected:', e.gamepad.id);
+            currentGamepad = e.gamepad;
+        });
+
+        window.addEventListener('gamepaddisconnected', (e) => {
+            console.log('Gamepad disconnected');
+            currentGamepad = null;
+            controllerStatus.style.display = 'none';
+        });
+
         init();
         animate();
 
         function init() {
             scene = new THREE.Scene();
             
-            // Skybox
             const img = new Image();
             img.crossOrigin = 'anonymous';
             img.src = 'https://raw.githubusercontent.com/Ren23447/Rotstorm-FPS/refs/heads/main/skyboxRS.jpg';
@@ -398,7 +474,6 @@
             
             scene.fog = new THREE.Fog(0x222222, 10, 150);
 
-            // Lighting & Shadows
             scene.add(new THREE.AmbientLight(0xffffff, 0.4));
             const dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
             dirLight.position.set(20, 50, 20);
@@ -414,7 +489,6 @@
             dirLight.shadow.bias = -0.0005;
             scene.add(dirLight);
 
-            // Floor
             const floorGeometry = new THREE.PlaneGeometry(200, 200);
             const floorMaterial = new THREE.MeshStandardMaterial({ color: 0x444444, roughness: 0.8, metalness: 0.2 });
             const floor = new THREE.Mesh(floorGeometry, floorMaterial);
@@ -423,10 +497,6 @@
             scene.add(floor);
             collidableMeshes.push(floor);
 
-            // Grid Layout slightly above floor to prevent Z-fighting
-            
-            
-            // Random Boxes with shadows
             for(let i=0; i<40; i++) {
                 const height = Math.random() * 3 + 1;
                 const box = new THREE.Mesh(
@@ -440,20 +510,46 @@
                 collidableMeshes.push(box);
             }
 
-            // Camera Setup
             camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
             camera.position.y = baseHeightOffset;
 
             controls = new PointerLockControls(camera, document.body);
             scene.add(controls.getObject());
 
-            // Menu Interactions
             document.getElementById('btn-play').addEventListener('click', () => { controls.lock(); });
             document.getElementById('btn-resume').addEventListener('click', () => { controls.lock(); });
             document.getElementById('btn-exit').addEventListener('click', () => {
                 gameState = 'HOME';
                 pauseScreen.classList.add('hidden');
                 homeScreen.classList.remove('hidden');
+            });
+
+            document.getElementById('btn-controls').addEventListener('click', () => {
+                homeScreen.classList.add('hidden');
+                controlsScreen.classList.remove('hidden');
+            });
+
+            document.getElementById('btn-controls-back').addEventListener('click', () => {
+                controlsScreen.classList.add('hidden');
+                homeScreen.classList.remove('hidden');
+            });
+
+            document.getElementById('btn-keyboard').addEventListener('click', () => {
+                useController = false;
+                document.getElementById('btn-keyboard').classList.add('active');
+                document.getElementById('btn-controller').classList.remove('active');
+                document.getElementById('keyboard-controls').classList.remove('hidden');
+                document.getElementById('controller-controls').classList.add('hidden');
+                controllerStatus.style.display = 'none';
+            });
+
+            document.getElementById('btn-controller').addEventListener('click', () => {
+                useController = true;
+                document.getElementById('btn-keyboard').classList.remove('active');
+                document.getElementById('btn-controller').classList.add('active');
+                document.getElementById('keyboard-controls').classList.add('hidden');
+                document.getElementById('controller-controls').classList.remove('hidden');
+                pollGamepads();
             });
 
             let prevGameState = 'HOME';
@@ -477,8 +573,11 @@
                     controls.pointerSpeed = parseFloat(e.target.value);
                 }
             });
+
+            document.getElementById('cont-sens-slider').addEventListener('input', (e) => {
+                controllerSensitivity = parseFloat(e.target.value);
+            });
             
-            // Audio Volume Slider
             document.getElementById('vol-slider').addEventListener('input', (e) => {
                 masterVolume = parseFloat(e.target.value);
             });
@@ -500,7 +599,6 @@
                 }
             });
 
-            // Renderer Setup
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.shadowMap.enabled = true;
@@ -513,7 +611,6 @@
                 renderer.setSize(window.innerWidth, window.innerHeight);
             });
 
-            // Load Model & Animations
             new GLTFLoader().load('https://raw.githubusercontent.com/Ren23447/Rotstorm-FPS/main/smg_fps_animations.glb', (gltf) => {
                 const model = gltf.scene;
                 camera.add(model);
@@ -524,7 +621,6 @@
                 mixer = new THREE.AnimationMixer(model);
                 const anims = gltf.animations;
                 
-                // Inspect added alongside others
                 const animNames = {
                     "idle":"Rig|KDW_DPose_Idle",
                     "walk":"Rig|KDW_Walk",
@@ -560,7 +656,6 @@
 
                 if(actions['idle']) fadeToAction('idle', 0);
                 
-                // Initialize Game
                 loadingScreen.classList.add('hidden');
                 homeScreen.classList.remove('hidden');
                 gameState = 'HOME';
@@ -576,21 +671,19 @@
                   console.error('An error happened', error);
               });
 
-            // Input Listeners
             document.addEventListener('keydown', (e) => {
                 if (keys.hasOwnProperty(e.code)) keys[e.code] = true;
 
                 if (gameState !== 'PLAYING') return;
 
                 if (e.code === 'KeyR' && !isReloading && !isShooting && !isInspecting && actions['reload']) {
-                    if (ammo <= 29) { // Can only reload if ammo is 10 or under
+                    if (ammo <= 29) {
                         isReloading = true;
                         actions['reload'].reset();
                         fadeToAction('reload', 0.2);
                     }
                 }
 
-                // Check for 'I' key for inspect
                 if (e.code === 'KeyI' && !isReloading && !isShooting && !isInspecting && actions['inspect']) {
                     isInspecting = true;
                     actions['inspect'].reset();
@@ -598,7 +691,6 @@
                 }
 
                 if (e.code === 'KeyZ') {
-                    // Check for slide criteria
                     isRunning = keys.ShiftLeft || keys.ShiftRight;
                     if (isRunning && !isStaminaExhausted && !isSliding && stamina >= SLIDE_COST && canJump) {
                         isSliding = true;
@@ -606,7 +698,6 @@
                         stamina = Math.max(0, stamina - SLIDE_COST);
                         if (stamina === 0) isStaminaExhausted = true;
                         
-                        // Capture the direction we are facing to continue sliding that way
                         camera.getWorldDirection(slideDirection);
                         slideDirection.y = 0;
                         if (slideDirection.lengthSq() > 0) {
@@ -615,7 +706,6 @@
                             slideDirection.set(0, 0, -1);
                         }
                         
-                        // Capture initial yaw for camera clamping
                         const euler = new THREE.Euler(0, 0, 0, 'YXZ');
                         euler.setFromQuaternion(camera.quaternion);
                         initialSlideYaw = euler.y;
@@ -640,39 +730,61 @@
                         actions['shoot'].reset();
                         fadeToAction('shoot', 0.1);
                         
-                        // Play Gun Sound
                         const audio = new Audio(gunSoundUrl);
                         audio.volume = masterVolume;
                         audio.play().catch(e => console.log('Audio play failed:', e));
                         
-                        // Spawn Bullet
                         spawnBullet();
                     }
                 }
             });
         }
         
+        function checkPlayerCollision(newPosition) {
+            const playerBox = new THREE.Box3(
+                new THREE.Vector3(
+                    newPosition.x - PLAYER_COLLISION_RADIUS,
+                    newPosition.y - baseHeightOffset + 0.1, 
+                    newPosition.z - PLAYER_COLLISION_RADIUS
+                ),
+                new THREE.Vector3(
+                    newPosition.x + PLAYER_COLLISION_RADIUS,
+                    newPosition.y,
+                    newPosition.z + PLAYER_COLLISION_RADIUS
+                )
+            );
+
+            for (let i = 0; i < collidableMeshes.length; i++) {
+                const mesh = collidableMeshes[i];
+                if (mesh.geometry && mesh.geometry.type === 'BoxGeometry') {
+                    const meshBox = new THREE.Box3().setFromObject(mesh);
+                    if (playerBox.intersectsBox(meshBox)) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
         function spawnBullet() {
             const bullet = new THREE.Mesh(bulletGeometry, bulletMaterial);
             
-            // Get bullet spawn position and direction
             const shootDirection = new THREE.Vector3();
             camera.getWorldDirection(shootDirection);
             shootDirection.normalize();
             
-            // Start from camera position, slightly offset forwards and downwards to match gun roughly
             bullet.position.copy(camera.position);
             bullet.position.addScaledVector(shootDirection, 1.0);
             bullet.position.y -= 0.1;
             
             scene.add(bullet);
             
-            const bulletVelocity = shootDirection.multiplyScalar(500.0); // 80 units per second velocity
+            const bulletVelocity = shootDirection.multiplyScalar(500.0);
             
             bullets.push({
                 mesh: bullet,
                 velocity: bulletVelocity,
-                life: 7.0 // 3 seconds max lifetime
+                life: 7.0
             });
         }
 
@@ -685,7 +797,7 @@
 
             if (isMoving) {
                 if (isSliding) {
-                    target = 'run'; // or crouch walk if it exists. Fallback to run or walk
+                    target = 'run';
                 } else if (isCrouching) {
                     target = 'walk'; 
                 } else if (isRunning && !isStaminaExhausted) {
@@ -712,9 +824,11 @@
 
         function animate() {
             requestAnimationFrame(animate);
-            const dt = Math.min(clock.getDelta(), 0.1); // Clamp delta to prevent huge jumps
+            const dt = Math.min(clock.getDelta(), 0.1);
 
             if (mixer) mixer.update(dt);
+            
+            handleGamepadInput(dt);
 
             if (gameState === 'PLAYING') {
                 let moveForward = keys.KeyW;
@@ -724,7 +838,6 @@
                 isRunning = keys.ShiftLeft || keys.ShiftRight;
                 const isMoving = moveForward || moveBackward || moveLeft || moveRight;
 
-                // Stamina processing
                 if (isMoving && isRunning && !isCrouching && !isSliding && !isStaminaExhausted) {
                     stamina -= STAMINA_DRAIN * dt;
                     if (stamina <= 0) {
@@ -735,25 +848,21 @@
                     stamina += STAMINA_RECOVER * dt;
                     if (stamina >= 100) {
                         stamina = 100;
-                        isStaminaExhausted = false; // fully filled to run again
+                        isStaminaExhausted = false;
                     }
                 }
 
-                // UI update for Stamina
                 stBar.style.width = stamina + '%';
                 stBar.style.backgroundColor = isStaminaExhausted ? '#ff4444' : '#ffffff';
                 stContainer.style.display = stamina < 100 ? 'block' : 'none';
 
-                // Slide processing
                 if (isSliding) {
                     slideTimer -= dt;
                     if (slideTimer <= 0) {
                         isSliding = false;
-                        // Transition to crouch if still holding Z
                         isCrouching = keys.KeyZ;
                     }
                     
-                    // Restrict view radius to 136 degrees total (68 deg each way) during slide
                     const euler = new THREE.Euler(0, 0, 0, 'YXZ');
                     euler.setFromQuaternion(camera.quaternion);
                     let deltaYaw = euler.y - initialSlideYaw;
@@ -775,24 +884,31 @@
                 direction.x = Number(moveRight) - Number(moveLeft);
                 direction.normalize();
 
-                let currentSpeed = 25.0; // Walk
-                if (isCrouching) currentSpeed = 10.0; // Crouch speed
-                else if (isRunning && !isStaminaExhausted) currentSpeed = 50.0; // Sprint speed
+                let currentSpeed = 25.0;
+                if (isCrouching) currentSpeed = 10.0;
+                else if (isRunning && !isStaminaExhausted) currentSpeed = 50.0;
                 
+                const oldPosition = controls.getObject().position.clone();
+
                 if (isSliding) {
-                    // Realistic slide: gradual stop from 15 down to 5
                     currentSpeed = 1.0 + (20.0 * (slideTimer / 5.0)); 
                     
-                    // Decelerate internal velocity quickly so we don't snap back to normal speed unexpectedly 
                     velocity.x -= velocity.x * 10.0 * dt;
                     velocity.z -= velocity.z * 10.0 * dt;
 
-                    // Move primarily in the captured world direction
-                    controls.getObject().position.addScaledVector(slideDirection, currentSpeed * dt);
+                    const newPos = oldPosition.clone();
+                    newPos.addScaledVector(slideDirection, currentSpeed * dt);
                     
-                    // Barely move left/right relative to look direction (strafe)
+                    if (!checkPlayerCollision(newPos)) {
+                        controls.getObject().position.copy(newPos);
+                    }
+                    
                     const strafe = (Number(moveRight) - Number(moveLeft)) * 0.15 * currentSpeed;
+                    const strafePos = controls.getObject().position.clone();
                     controls.moveRight(strafe * dt);
+                    if (checkPlayerCollision(controls.getObject().position)) {
+                        controls.getObject().position.copy(strafePos);
+                    }
                 } else {
                     velocity.x -= velocity.x * 6.5 * dt;
                     velocity.z -= velocity.z * 6.5 * dt;
@@ -800,41 +916,66 @@
                     if (moveForward || moveBackward) velocity.z -= direction.z * currentSpeed * dt;
                     if (moveLeft || moveRight) velocity.x -= direction.x * currentSpeed * dt;
 
+                    const moveRightPos = controls.getObject().position.clone();
                     controls.moveRight(-velocity.x * dt);
+                    if (checkPlayerCollision(controls.getObject().position)) {
+                        controls.getObject().position.copy(moveRightPos);
+                    }
+
+                    const moveForwardPos = controls.getObject().position.clone();
                     controls.moveForward(-velocity.z * dt);
+                    if (checkPlayerCollision(controls.getObject().position)) {
+                        controls.getObject().position.copy(moveForwardPos);
+                    }
                 }
 
-                // Jump trigger
                 if (keys.Space && canJump && !isCrouching && !isSliding) {
-                    velocity.y = 12.0; // Scaled realistic jump velocity
+                    velocity.y = 12.0;
                     canJump = false;
-                    keys.Space = false; // Consume the keypress
+                    keys.Space = false;
                 }
                 
-                // Vertical Physics & Height Adjustments
                 let targetHeight = (isCrouching || isSliding) ? 0.8 : 1.7;
                 let oldBaseHeight = baseHeightOffset;
-                baseHeightOffset += (targetHeight - baseHeightOffset) * 15.0 * dt; // Smooth transition
+                baseHeightOffset += (targetHeight - baseHeightOffset) * 15.0 * dt;
                 
-                // Keep the camera strictly tracking the ground if we are technically grounded
+                let floorHeight = 0;
+                const pX = controls.getObject().position.x;
+                const pZ = controls.getObject().position.z;
+                
+                for (let i = 0; i < collidableMeshes.length; i++) {
+                    const mesh = collidableMeshes[i];
+                    if (mesh.geometry && mesh.geometry.type === 'BoxGeometry') {
+                        const meshBox = new THREE.Box3().setFromObject(mesh);
+                        if (pX > meshBox.min.x - PLAYER_COLLISION_RADIUS && pX < meshBox.max.x + PLAYER_COLLISION_RADIUS &&
+                            pZ > meshBox.min.z - PLAYER_COLLISION_RADIUS && pZ < meshBox.max.z + PLAYER_COLLISION_RADIUS) {
+                            
+                            if (meshBox.max.y <= controls.getObject().position.y - baseHeightOffset + 0.5) {
+                                if (meshBox.max.y > floorHeight) {
+                                    floorHeight = meshBox.max.y;
+                                }
+                            }
+                        }
+                    }
+                }
+
                 if (canJump) {
                     controls.getObject().position.y += (baseHeightOffset - oldBaseHeight);
                 }
 
-                // Apply Gravity (adjusted to be more realistic with the jump velocity)
                 velocity.y -= 9.8 * 4.0 * dt; 
                 controls.getObject().position.y += velocity.y * dt;
+                
+                let targetY = floorHeight + baseHeightOffset;
 
-                // Floor Collision
-                if (controls.getObject().position.y <= baseHeightOffset) {
-                    velocity.y = Math.max(0, velocity.y); // Prevent sticky negative velocity
-                    controls.getObject().position.y = baseHeightOffset;
+                if (controls.getObject().position.y <= targetY) {
+                    velocity.y = Math.max(0, velocity.y);
+                    controls.getObject().position.y = targetY;
                     canJump = true;
-                } else if (controls.getObject().position.y > baseHeightOffset + 0.05) {
-                    canJump = false; // We are airborne
+                } else if (controls.getObject().position.y > targetY + 0.05) {
+                    canJump = false;
                 }
                 
-                // Update Bullets Physics
                 for (let i = bullets.length - 1; i >= 0; i--) {
                     const b = bullets[i];
                     b.life -= dt;
@@ -844,7 +985,6 @@
                         continue;
                     }
                     
-                    // Raycast for bullet collision
                     const movementVector = b.velocity.clone().multiplyScalar(dt);
                     const movementDistance = movementVector.length();
                     const rayDirection = b.velocity.clone().normalize();
@@ -855,16 +995,12 @@
                     const intersects = bulletRaycaster.intersectObjects(collidableMeshes);
                     
                     if (intersects.length > 0) {
-                        // Bullet hit something
                         b.mesh.position.copy(intersects[0].point);
                         scene.remove(b.mesh);
                         bullets.splice(i, 1);
                         
-                        // Optionally add an impact effect or change color to show hit
                         const hitObject = intersects[0].object;
                         if (hitObject.geometry && hitObject.geometry.type === 'BoxGeometry') {
-                            // hitObject.material.color.setHex(Math.random() * 0xffffff); // change color on hit
-                            // make it blink white
                             const oldColor = hitObject.material.color.getHex();
                             hitObject.material.color.setHex(0xffffff);
                             setTimeout(() => {
@@ -874,15 +1010,11 @@
                             }, 100);
                         }
                     } else {
-                        // Apply gravity to bullet
-                        b.velocity.y -= 9.8 * dt; // gravity
-                        
-                        // Move bullet
+                        b.velocity.y -= 9.8 * dt;
                         b.mesh.position.add(movementVector);
                     }
                 }
                 
-                // Apply screen shake if sliding
                 let shakeX = 0, shakeY = 0, shakeZ = 0;
                 if (isSliding) {
                     const shakeIntensity = (slideTimer / 2.0) * 0.25;
@@ -896,7 +1028,6 @@
 
                 renderer.render(scene, camera);
 
-                // Restore camera position after shake
                 if (isSliding) {
                     camera.position.x -= shakeX;
                     camera.position.y -= shakeY;
