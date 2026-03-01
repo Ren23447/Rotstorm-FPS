@@ -243,8 +243,8 @@
                   <div id="health-bar" style="width: 100%; height: 100%; background: linear-gradient(90deg, #880000, #ff1111); box-shadow: inset 0 0 15px #ff0000; transition: width 0.1s linear;"></div>
               </div>
               <div style="display: flex; justify-content: space-between; font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif; letter-spacing: 2px; text-shadow: 2px 2px 4px #000; padding: 0 10px; margin-top: -5px;">
-                  <span style="color: #00aaff; font-size: 18px; font-style: italic;">ARMOR</span>
-                  <span style="color: #ff3333; font-size: 18px; font-style: italic;">INTEGRITY</span>
+                  <span style="color: #00aaff; font-size: 18px; font-style: italic;">AV</span>
+                  <span style="color: #ff3333; font-size: 18px; font-style: italic;">HP</span>
               </div>
           </div>
           <div id="damage-indicator" style="position: absolute; inset: 0; pointer-events: none; z-index: 12; opacity: 0; transition: opacity 0.2s; display: none;">
@@ -402,9 +402,16 @@
           let maxFallHeight = 0;
           let falling = false;
           let healthRegenTimer = 0;
+          let timeSinceLastDamage = 0;
+          const HEALTH_REGEN_DELAY = 5.0;
+          const HEALTH_REGEN_RATE = 20.0;
           
           // Audio
-          const fallDamageAudio = new Audio('https://raw.githubusercontent.com/Ren23447/Rotstorm-FPS/main/universfield-ground-impact-352053.mp3');
+          const damageAudio = new Audio('https://raw.githubusercontent.com/Ren23447/Rotstorm-FPS/main/soundreality-horror-thriller-action-247745.mp3');
+          damageAudio.volume = 0.1;
+          let isDamageSoundPlaying = false;
+          damageAudio.addEventListener('ended', () => { isDamageSoundPlaying = false; });
+          const fallDamageAudio = new Audio('https://raw.githubusercontent.com/Ren23447/Rotstorm-FPS/main/Impact.mp3');
           fallDamageAudio.volume = 1.0;
           function playFallDamageSound() {
               if (typeof fallDamageAudio !== 'undefined' && fallDamageAudio) {
@@ -422,6 +429,13 @@
           function damagePlayer(amount, sourcePos, ignoreArmor = false) {
               if (isPlayerDead) return;
               healthRegenTimer = 0; // reset regen
+              timeSinceLastDamage = 0;
+              
+              if (!isDamageSoundPlaying && amount > 0) {
+                  isDamageSoundPlaying = true;
+                  damageAudio.currentTime = 0;
+                  damageAudio.play().catch(e => console.log('Audio error:', e));
+              }
               
               if (!ignoreArmor && playerArmor > 0) {
                   if (playerArmor >= amount) {
@@ -533,6 +547,8 @@
         let dummyMesh = null;
         let ammoCrate = null;
         let ammoCrateHitbox = null;
+        let medkit = null;
+        let medkitHitbox = null;
         let dummyParts = [];
         let dummyShowHealthTimer = 0;
         let isDummyDead = false;
@@ -718,9 +734,23 @@
                 }
 
                 if (buttons[2] && buttons[2].pressed && !isReloading && !isShooting && !isInspecting) {
-                    if (checkInteraction()) {
+                    const interactable = checkInteraction();
+                    if (interactable === 'ammo') {
                         reserveAmmo = MAX_RESERVE_AMMO;
                         updateAmmoUI();
+                    } else if (interactable === 'medkit') {
+                        if (playerHealth < 100) {
+                            playerHealth = 100;
+                            updatePlayerStatusUI();
+                            medkit.visible = false;
+                            medkitHitbox.position.y = -100; // Move hitbox away
+                            
+                            // Respawn medkit after 30 seconds
+                            setTimeout(() => {
+                                medkit.visible = true;
+                                medkitHitbox.position.copy(medkit.position);
+                            }, 30000);
+                        }
                     } else if (actions['reload']) {
                         if (ammo < MAX_AMMO && reserveAmmo > 0) {
                             isReloading = true;
@@ -1013,7 +1043,9 @@
                 { w: 0.2, h: 1.5, d: 0.2, x: -5.9, y: 0.75, z: 4.1, rx: 0, ry: 0, rz: 0, color: 0x444444 }, // Leg
                 { w: 0.2, h: 1.5, d: 0.2, x: -4.1, y: 0.75, z: 4.1, rx: 0, ry: 0, rz: 0, color: 0x444444 }, // Leg
                 // Big bright red wall for wallrunning
-                { w: 2, h: 20, d: 80, x: -30, y: 10, z: 0, rx: 0, ry: 0, rz: 0, color: 0xff0000 }
+                { w: 2, h: 20, d: 80, x: -30, y: 10, z: 0, rx: 0, ry: 0, rz: 0, color: 0xff0000 },
+                // New wall near yellow rectangle (yellow is at x: 20, y: 4, z: 15)
+                { w: 10, h: 8, d: 2, x: 20, y: 4, z: 10, rx: 0, ry: 0, rz: 0, color: 0x888888 }
             ];
 
             const physicsBoxes = [];
@@ -1239,9 +1271,23 @@
                 }
 
                 if (e.code === 'KeyF') {
-                    if (checkInteraction()) {
+                    const interactable = checkInteraction();
+                    if (interactable === 'ammo') {
                         reserveAmmo = MAX_RESERVE_AMMO;
                         updateAmmoUI();
+                    } else if (interactable === 'medkit') {
+                        if (playerHealth < 100) {
+                            playerHealth = 100;
+                            updatePlayerStatusUI();
+                            medkit.visible = false;
+                            medkitHitbox.position.y = -100; // Move hitbox away
+                            
+                            // Respawn medkit after 30 seconds
+                            setTimeout(() => {
+                                medkit.visible = true;
+                                medkitHitbox.position.copy(medkit.position);
+                            }, 30000);
+                        }
                     }
                 }
 
@@ -1408,19 +1454,29 @@
         }
 
         function checkInteraction() {
-            if (!ammoCrateHitbox) return false;
+            let interactable = null;
             
             const pos = controls.getObject().position;
             const fwd = new THREE.Vector3();
             camera.getWorldDirection(fwd);
             
             const raycaster = new THREE.Raycaster(pos, fwd, 0, 3.0);
-            const intersects = raycaster.intersectObject(ammoCrateHitbox);
             
-            if (intersects.length > 0) {
-                return true;
+            if (ammoCrateHitbox) {
+                const intersectsAmmo = raycaster.intersectObject(ammoCrateHitbox);
+                if (intersectsAmmo.length > 0) {
+                    interactable = 'ammo';
+                }
             }
-            return false;
+            
+            if (medkitHitbox && !interactable && medkit.visible) {
+                const intersectsMedkit = raycaster.intersectObject(medkitHitbox);
+                if (intersectsMedkit.length > 0) {
+                    interactable = 'medkit';
+                }
+            }
+            
+            return interactable;
         }
 
         function spawnBullet() {
@@ -1483,6 +1539,17 @@
             requestAnimationFrame(animate);
             const dt = Math.min(clock.getDelta(), 0.1);
 
+            if (gameState === 'PLAYING' && !isPlayerDead) {
+                timeSinceLastDamage += dt;
+                if (timeSinceLastDamage >= HEALTH_REGEN_DELAY) {
+                    if (playerHealth < 100) {
+                        playerHealth += HEALTH_REGEN_RATE * dt;
+                        if (playerHealth > 100) playerHealth = 100;
+                        updatePlayerStatusUI();
+                    }
+                }
+            }
+
             if (mixer) mixer.update(dt);
             
             handleGamepadInput(dt);
@@ -1490,8 +1557,18 @@
             if (gameState === 'PLAYING') {
                 const prompt = document.getElementById('interaction-prompt');
                 if (prompt) {
-                    if (checkInteraction()) {
+                    const interactable = checkInteraction();
+                    if (interactable) {
                         prompt.style.display = 'block';
+                        
+                        // We will update the HTML string instead of using DOM methods since we are generating text
+                        prompt.innerHTML = `<div style="background: rgba(0, 0, 0, 0.6); padding: 8px 20px; border-radius: 4px; border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
+                <div style="font-size: 12px; text-transform: uppercase; letter-spacing: 2px; opacity: 0.8; margin-bottom: 4px;">${interactable === 'ammo' ? 'Ammunition' : 'Health'}</div>
+                <div style="font-size: 20px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 10px;">
+                    <span style="background: #fff; color: #000; padding: 2px 8px; border-radius: 3px; font-size: 18px;">F</span>
+                    <span style="letter-spacing: 1px;">${interactable === 'ammo' ? 'REFILL AMMO' : 'USE MEDKIT'}</span>
+                </div>
+            </div>`;
                     } else {
                         prompt.style.display = 'none';
                     }
