@@ -737,11 +737,11 @@
             new GLTFLoader().load('https://raw.githubusercontent.com/Ren23447/Rotstorm-FPS/main/Ammocrate.glb', (gltf) => {
                 ammoCrate = gltf.scene;
                 // Position on top of the ammo table we created at x: -5, y: 1.5, z: 5
-                ammoCrate.position.set(-5, 1.6, 5); 
-                ammoCrate.scale.set(0.20, 0.20, 0.20); // Scaled down for realism
+                ammoCrate.position.set(-5, 1.8, 5); 
+                ammoCrate.scale.set(0.20, 0.19, 0.20); // Scaled down for realism
                 
                 // Add a hitbox for interaction detection
-                const hitboxGeo = new THREE.BoxGeometry(0.20, 1.0, 0.9);
+                const hitboxGeo = new THREE.BoxGeometry(0.20, 0.20, 0.9);
                 const hitboxMat = new THREE.MeshBasicMaterial({ visible: false });
                 ammoCrateHitbox = new THREE.Mesh(hitboxGeo, hitboxMat);
                 ammoCrateHitbox.position.copy(ammoCrate.position);
