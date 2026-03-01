@@ -408,7 +408,7 @@
           
           // Audio
           const damageAudio = new Audio('https://raw.githubusercontent.com/Ren23447/Rotstorm-FPS/main/soundreality-horror-thriller-action-247745.mp3');
-          damageAudio.volume = 0.1;
+          damageAudio.volume = 0.9;
           let isDamageSoundPlaying = false;
           damageAudio.addEventListener('ended', () => { isDamageSoundPlaying = false; });
           const fallDamageAudio = new Audio('https://raw.githubusercontent.com/Ren23447/Rotstorm-FPS/main/Impact.mp3');
@@ -626,6 +626,7 @@
         let cameraTilt = 0;
         let controllerSensitivity = 1.0;
         let gamepadJumpPressed = false;
+        let gamepadInteractPressed = false;
 
         const PLAYER_COLLISION_RADIUS = 0.5;
         const PLAYER_COLLISION_HEIGHT = 1.7;
@@ -741,17 +742,35 @@
                     }
                 }
 
-                if (buttons[2] && buttons[2].pressed && !isReloading && !isShooting && !isInspecting) {
-                    if (checkInteraction()) {
-                        reserveAmmo = MAX_RESERVE_AMMO;
-                        updateAmmoUI();
-                    } else if (actions['reload']) {
-                        if (ammo < MAX_AMMO && reserveAmmo > 0) {
-                            isReloading = true;
-                            actions['reload'].reset();
-                            fadeToAction('reload', 0.2);
+                if (buttons[2] && buttons[2].pressed) {
+                    if (!gamepadInteractPressed) {
+                        gamepadInteractPressed = true;
+                        if (!isReloading && !isShooting && !isInspecting) {
+                            const interaction = checkInteraction();
+                            if (interaction.type === 'ammo') {
+                                reserveAmmo = MAX_RESERVE_AMMO;
+                                updateAmmoUI();
+                            } else if (interaction.type === 'health') {
+                                playerHealth = Math.min(100, playerHealth + 50);
+                                updatePlayerStatusUI();
+                                if (healthCrate && healthCrateHitbox) {
+                                    scene.remove(healthCrate);
+                                    scene.remove(healthCrateHitbox);
+                                    const idx = collidableMeshes.indexOf(healthCrateHitbox);
+                                    if (idx > -1) collidableMeshes.splice(idx, 1);
+                                    healthCrateHitbox = null;
+                                }
+                            } else if (actions['reload']) {
+                                if (ammo < MAX_AMMO && reserveAmmo > 0) {
+                                    isReloading = true;
+                                    actions['reload'].reset();
+                                    fadeToAction('reload', 0.2);
+                                }
+                            }
                         }
                     }
+                } else {
+                    gamepadInteractPressed = false;
                 }
 
                 if (buttons[3] && buttons[3].pressed && !isReloading && !isShooting && !isInspecting && actions['inspect']) {
