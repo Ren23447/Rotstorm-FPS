@@ -117,6 +117,37 @@
             color: #ffcc00; text-transform: uppercase; letter-spacing: 2px;
         }
 
+        .cod-slider {
+            -webkit-appearance: none;
+            width: 250px !important;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.2);
+            outline: none;
+            opacity: 0.7;
+            -webkit-transition: .2s;
+            transition: opacity .2s;
+        }
+        .cod-slider:hover {
+            opacity: 1;
+        }
+        .cod-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 15px;
+            height: 25px;
+            background: #ffcc00;
+            cursor: pointer;
+            border-radius: 2px;
+        }
+        .cod-slider::-moz-range-thumb {
+            width: 15px;
+            height: 25px;
+            background: #ffcc00;
+            cursor: pointer;
+            border-radius: 2px;
+            border: none;
+        }
+
         #loading-screen {
             background: #000 radial-gradient(circle, #222 0%, #000 100%);
         }
@@ -213,13 +244,13 @@
         </div>
     </div>
 
-    <div id="controls-screen" class="screen hidden">
-        <h1>CONTROLS</h1>
-        <div class="control-toggle">
-            <button id="btn-keyboard" class="active">KEYBOARD</button>
-            <button id="btn-controller">PS5 CONTROLLER</button>
+    <div id="controls-screen" class="screen hidden" style="align-items: flex-start; padding-left: 10%; background: rgba(0,0,0,0.95); backdrop-filter: blur(10px);">
+        <h1 class="cod-title" style="font-size: 60px; margin-bottom: 40px; color: #fff;">CONTROLS</h1>
+        <div class="control-toggle" style="margin-bottom: 30px;">
+            <button id="btn-keyboard" class="active cod-btn" style="font-size: 24px;">KEYBOARD</button>
+            <button id="btn-controller" class="cod-btn" style="font-size: 24px;">PS5 CONTROLLER</button>
         </div>
-        <div id="keyboard-controls" class="keybinds">
+        <div id="keyboard-controls" class="keybinds cod-keybinds" style="width: 500px;">
             <h3>KEYBOARD CONTROLS</h3>
             <div class="keybind-row"><span class="keybind-key">W A S D</span><span>Move</span></div>
             <div class="keybind-row"><span class="keybind-key">Mouse</span><span>Look Around</span></div>
@@ -230,7 +261,7 @@
             <div class="keybind-row"><span class="keybind-key">R</span><span>Reload</span></div>
             <div class="keybind-row"><span class="keybind-key">I</span><span>Inspect Weapon</span></div>
         </div>
-        <div id="controller-controls" class="keybinds hidden">
+        <div id="controller-controls" class="keybinds cod-keybinds hidden" style="width: 500px;">
             <h3>PS5 CONTROLLER</h3>
             <div class="keybind-row"><span class="keybind-key">Left Stick</span><span>Move</span></div>
             <div class="keybind-row"><span class="keybind-key">Right Stick</span><span>Look Around</span></div>
@@ -241,43 +272,47 @@
             <div class="keybind-row"><span class="keybind-key">Square</span><span>Reload</span></div>
             <div class="keybind-row"><span class="keybind-key">Triangle</span><span>Inspect Weapon</span></div>
         </div>
-        <button class="menu-btn" id="btn-controls-back" style="margin-top: 30px;">Back</button>
+        <button class="menu-btn cod-btn" id="btn-controls-back" style="margin-top: 30px;">BACK</button>
     </div>
 
-    <div id="pause-screen" class="screen hidden">
-        <h1>PAUSED</h1>
-        <button class="menu-btn" id="btn-resume">Resume</button>
-        <button class="menu-btn" id="btn-settings-pause">Settings</button>
-        <button class="menu-btn" id="btn-exit">Exit to Home</button>
+    <div id="pause-screen" class="screen hidden" style="align-items: flex-start; padding-left: 10%; background: rgba(0,0,0,0.85); backdrop-filter: blur(10px);">
+        <h1 class="cod-title" style="font-size: 60px; margin-bottom: 40px; color: #fff; text-shadow: 2px 2px 0 #000, 4px 4px 10px rgba(0,0,0,0.8);">PAUSED</h1>
+        <div style="display: flex; flex-direction: column; align-items: flex-start;">
+            <button class="menu-btn cod-btn" id="btn-resume">RESUME</button>
+            <button class="menu-btn cod-btn" id="btn-settings-pause">SETTINGS</button>
+            <button class="menu-btn cod-btn" id="btn-exit">EXIT TO HOME</button>
+        </div>
     </div>
 
-    <div id="settings-panel" class="hidden">
-        <h1>SETTINGS</h1>
-        <div class="setting-row">
-            <label>Sensitivity</label>
-            <input type="range" id="sens-slider" min="0.1" max="5.0" step="0.1" value="1.0">
+    <div id="settings-panel" class="screen hidden" style="align-items: flex-start; padding-left: 10%; background: rgba(0,0,0,0.95); backdrop-filter: blur(10px);">
+        <h1 class="cod-title" style="font-size: 60px; margin-bottom: 40px; color: #fff;">SETTINGS</h1>
+        <div style="display: flex; flex-direction: column; gap: 20px;">
+            <div class="setting-row" style="justify-content: flex-start; gap: 40px;">
+                <label style="width: 250px; text-transform: uppercase; font-weight: bold; color: #b0bec5; letter-spacing: 2px;">Sensitivity</label>
+                <input type="range" class="cod-slider" id="sens-slider" min="0.1" max="5.0" step="0.1" value="1.0">
+            </div>
+            <div class="setting-row" style="justify-content: flex-start; gap: 40px;">
+                <label style="width: 250px; text-transform: uppercase; font-weight: bold; color: #b0bec5; letter-spacing: 2px;">Controller Sensitivity</label>
+                <input type="range" class="cod-slider" id="cont-sens-slider" min="0.1" max="5.0" step="0.1" value="1.0">
+            </div>
+            <div class="setting-row" style="justify-content: flex-start; gap: 40px;">
+                <label style="width: 250px; text-transform: uppercase; font-weight: bold; color: #b0bec5; letter-spacing: 2px;">Master Volume</label>
+                <input type="range" class="cod-slider" id="vol-slider" min="0.0" max="1.0" step="0.05" value="1.0">
+            </div>
+            <div class="setting-row" style="justify-content: flex-start; gap: 40px;">
+                <label style="width: 250px; text-transform: uppercase; font-weight: bold; color: #b0bec5; letter-spacing: 2px;">Gunshot Volume</label>
+                <input type="range" class="cod-slider" id="gun-vol-slider" min="0.0" max="1.0" step="0.05" value="1.0">
+            </div>
+            <div class="setting-row" style="justify-content: flex-start; gap: 40px;">
+                <label style="width: 250px; text-transform: uppercase; font-weight: bold; color: #b0bec5; letter-spacing: 2px;">Walking Volume</label>
+                <input type="range" class="cod-slider" id="walk-vol-slider" min="0.0" max="1.0" step="0.05" value="1.0">
+            </div>
+            <div class="setting-row" style="justify-content: flex-start; gap: 40px;">
+                <label style="width: 250px; text-transform: uppercase; font-weight: bold; color: #b0bec5; letter-spacing: 2px;">Ambient Volume</label>
+                <input type="range" class="cod-slider" id="ambient-vol-slider" min="0.0" max="1.0" step="0.05" value="1.0">
+            </div>
         </div>
-        <div class="setting-row">
-            <label>Controller Sensitivity</label>
-            <input type="range" id="cont-sens-slider" min="0.1" max="5.0" step="0.1" value="1.0">
-        </div>
-        <div class="setting-row">
-            <label>Master Volume</label>
-            <input type="range" id="vol-slider" min="0.0" max="1.0" step="0.05" value="1.0">
-        </div>
-        <div class="setting-row">
-            <label>Gunshot Volume</label>
-            <input type="range" id="gun-vol-slider" min="0.0" max="1.0" step="0.05" value="1.0">
-        </div>
-        <div class="setting-row">
-            <label>Walking Volume</label>
-            <input type="range" id="walk-vol-slider" min="0.0" max="1.0" step="0.05" value="1.0">
-        </div>
-        <div class="setting-row">
-            <label>Ambient Volume</label>
-            <input type="range" id="ambient-vol-slider" min="0.0" max="1.0" step="0.05" value="1.0">
-        </div>
-        <button class="menu-btn" id="btn-close-settings" style="margin-top: 40px;">Back</button>
+        <button class="menu-btn cod-btn" id="btn-close-settings" style="margin-top: 40px;">BACK</button>
     </div>
 
     <script type="module">
@@ -580,6 +615,26 @@
             floor.receiveShadow = true;
             scene.add(floor);
             collidableMeshes.push(floor);
+
+            // Staircase - Test for step-over mechanic
+            const stepMaterial = new THREE.MeshStandardMaterial({ color: 0x666666, roughness: 0.9, metalness: 0.1 });
+            const numSteps = 10;
+            const stepWidth = 4.0;
+            const stepDepth = 1.0;
+            const stepHeight = 0.25; // Small enough to step over with the new mechanic
+            
+            for (let i = 0; i < numSteps; i++) {
+                const stepGeo = new THREE.BoxGeometry(stepWidth, stepHeight, stepDepth);
+                const step = new THREE.Mesh(stepGeo, stepMaterial);
+                
+                // Position stairs at x: -15, going up in z direction
+                step.position.set(-15, (i * stepHeight) + (stepHeight / 2), -5 + (i * stepDepth));
+                step.castShadow = true;
+                step.receiveShadow = true;
+                
+                scene.add(step);
+                collidableMeshes.push(step);
+            }
 
             // Dummy Target Initialization
             dummyMesh = new THREE.Group();
@@ -1053,7 +1108,8 @@
         }
         
         function checkPlayerCollision(newPosition) {
-            const cylinderBottom = newPosition.y - baseHeightOffset + 0.6;
+            // Raised cylinder bottom to allow stepping over small obstacles (stairs)
+            const cylinderBottom = newPosition.y - baseHeightOffset + 0.85;
             const cylinderTop = newPosition.y;
 
             for (let i = 0; i < collidableMeshes.length; i++) {
@@ -1692,6 +1748,44 @@
                         bullets.splice(i, 1);
                         
                         const hitObject = intersects[0].object;
+                            // ADD BULLET HOLE DECAL
+                            const decalSize = 0.2; // Scaled down to look more real
+                            const decalGeometry = new THREE.PlaneGeometry(decalSize, decalSize); 
+                            const textureLoader = new THREE.TextureLoader();
+                            const bulletHoleTexture = textureLoader.load('https://raw.githubusercontent.com/Ren23447/Rotstorm-FPS/refs/heads/main/bullet-hole.png');
+                            
+                            const decalMaterial = new THREE.MeshBasicMaterial({ 
+                                map: bulletHoleTexture, 
+                                transparent: true,
+                                depthWrite: false,
+                                polygonOffset: true,
+                                polygonOffsetFactor: -4,
+                                polygonOffsetUnits: -4
+                            });
+                            const decal = new THREE.Mesh(decalGeometry, decalMaterial);
+                            
+                            decal.position.copy(intersects[0].point);
+                            
+                            // Make it face outwards along the normal
+                            if (intersects[0].face) {
+                                const n = intersects[0].face.normal.clone();
+                                n.transformDirection(hitObject.matrixWorld).normalize();
+                                const lookAtPoint = new THREE.Vector3().copy(decal.position).add(n);
+                                decal.lookAt(lookAtPoint);
+                            }
+                            
+                            // Randomize rotation slightly for variation
+                            decal.rotateZ(Math.random() * Math.PI * 2);
+                            
+                            scene.add(decal);
+                            
+                            // Remove decal after some time
+                            setTimeout(() => {
+                                if (decal.parent) decal.parent.remove(decal);
+                                decalGeometry.dispose();
+                                decalMaterial.dispose();
+                            }, 15000); // 15 seconds
+
                         
                         if (hitObject.userData.isDummy && !isDummyDead) {
                             dummyHealth -= 25; // bullet damage
