@@ -303,6 +303,20 @@
         const STAMINA_RECOVER = 15;
         const SLIDE_COST = 5;
 
+        // Dummy target variables
+        let dummyHealth = 100;
+        let dummyMesh = null;
+        let dummyParts = [];
+        let dummyShowHealthTimer = 0;
+        let isDummyDead = false;
+        let dummyRespawnTimer = 0;
+        const DUMMY_RESPAWN_TIME = 10;
+        let dummyPhysicsActive = false;
+        let dummyHealthSprite = null;
+        let dummyHealthBarMesh = null;
+        
+        const physicsBoxes = [];
+
         // Wallrun mechanic variables
         let isWallRunning = false;
         let wallRunStamina = 100;
@@ -547,6 +561,160 @@
             scene.add(floor);
             collidableMeshes.push(floor);
 
+            // Dummy Target Initialization
+            dummyMesh = new THREE.Group();
+            
+            // Material for dummy
+            const dummyMat = new THREE.MeshStandardMaterial({ color: 0xff0000, roughness: 0.5 });
+
+            // Torso
+            const torsoGeo = new THREE.BoxGeometry(0.8, 1.2, 0.4);
+            const torso = new THREE.Mesh(torsoGeo, dummyMat);
+            torso.position.y = 1.0;
+            torso.castShadow = true;
+            torso.receiveShadow = true;
+            torso.userData.isDummy = true;
+            torso.userData.part = 'torso';
+            dummyMesh.add(torso);
+            dummyParts.push(torso);
+
+            // Head
+            const headGeo = new THREE.BoxGeometry(0.4, 0.4, 0.4);
+            const head = new THREE.Mesh(headGeo, dummyMat);
+            head.position.y = 1.8;
+            head.castShadow = true;
+            head.receiveShadow = true;
+            head.userData.isDummy = true;
+            head.userData.part = 'head';
+            dummyMesh.add(head);
+            dummyParts.push(head);
+
+            // Left Arm
+            const armGeo = new THREE.BoxGeometry(0.25, 1.0, 0.25);
+            const leftArm = new THREE.Mesh(armGeo, dummyMat);
+            leftArm.position.set(-0.6, 1.1, 0);
+            leftArm.castShadow = true;
+            leftArm.receiveShadow = true;
+            leftArm.userData.isDummy = true;
+            leftArm.userData.part = 'leftArm';
+            dummyMesh.add(leftArm);
+            dummyParts.push(leftArm);
+
+            // Right Arm
+            const rightArm = new THREE.Mesh(armGeo, dummyMat);
+            rightArm.position.set(0.6, 1.1, 0);
+            rightArm.castShadow = true;
+            rightArm.receiveShadow = true;
+            rightArm.userData.isDummy = true;
+            rightArm.userData.part = 'rightArm';
+            dummyMesh.add(rightArm);
+            dummyParts.push(rightArm);
+
+            // Left Leg
+            const legGeo = new THREE.BoxGeometry(0.3, 1.2, 0.3);
+            const leftLeg = new THREE.Mesh(legGeo, dummyMat);
+            leftLeg.position.set(-0.25, 0.6, 0);
+            leftLeg.castShadow = true;
+            leftLeg.receiveShadow = true;
+            leftLeg.userData.isDummy = true;
+            leftLeg.userData.part = 'leftLeg';
+            dummyMesh.add(leftLeg);
+            dummyParts.push(leftLeg);
+
+            // Right Leg
+            const rightLeg = new THREE.Mesh(legGeo, dummyMat);
+            rightLeg.position.set(0.25, 0.6, 0);
+            rightLeg.castShadow = true;
+            rightLeg.receiveShadow = true;
+            rightLeg.userData.isDummy = true;
+            rightLeg.userData.part = 'rightLeg';
+            dummyMesh.add(rightLeg);
+            dummyParts.push(rightLeg);
+
+            dummyMesh.position.set(0, 0, 10); // Placed dummy here
+            
+            // Add a slightly larger invisible hitbox for the dummy group to collide with player
+            const dummyHitboxGeo = new THREE.BoxGeometry(1.6, 2.2, 0.8);
+            const dummyHitboxMat = new THREE.MeshBasicMaterial({ visible: false });
+            const dummyHitbox = new THREE.Mesh(dummyHitboxGeo, dummyHitboxMat);
+            dummyHitbox.position.y = 1.1;
+            dummyHitbox.userData.isDummy = true;
+            dummyHitbox.userData.isHitbox = true;
+            dummyMesh.add(dummyHitbox);
+            collidableMeshes.push(dummyHitbox);
+
+            scene.add(dummyMesh);
+
+            // World-space Health Bar for Dummy
+            const canvas = document.createElement('canvas');
+            canvas.width = 256;
+            canvas.height = 64;
+            const ctx = canvas.getContext('2d');
+            const texture = new THREE.CanvasTexture(canvas);
+            const spriteMaterial = new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false });
+            dummyHealthSprite = new THREE.Sprite(spriteMaterial);
+            dummyHealthSprite.scale.set(1.5, 0.375, 1);
+            dummyHealthSprite.position.y = 2.2;
+            dummyHealthSprite.visible = false;
+            dummyMesh.add(dummyHealthSprite);
+
+            function updateDummyHealthTexture() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                // COD Style: Dark slanted background with glowing edge
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = 'rgba(255, 0, 0, 0.5)';
+                ctx.fillStyle = 'rgba(10, 10, 10, 0.9)';
+                ctx.beginPath();
+                ctx.moveTo(20, 5);
+                ctx.lineTo(canvas.width - 5, 5);
+                ctx.lineTo(canvas.width - 25, canvas.height - 5);
+                ctx.lineTo(0, canvas.height - 5);
+                ctx.closePath();
+                ctx.fill();
+                ctx.shadowBlur = 0;
+
+                // Health Fill (Bright Red to Orange gradient)
+                const fillPercent = Math.max(0, dummyHealth / 100);
+                const grad = ctx.createLinearGradient(0, 0, canvas.width, 0);
+                grad.addColorStop(0, '#ff0000');
+                grad.addColorStop(0.5, '#ff4400');
+                grad.addColorStop(1, '#ffaa00');
+                ctx.fillStyle = grad;
+                
+                const barWidth = (canvas.width - 40) * fillPercent;
+                if (barWidth > 0) {
+                    ctx.beginPath();
+                    ctx.moveTo(25, 10);
+                    ctx.lineTo(25 + barWidth, 10);
+                    ctx.lineTo(25 + barWidth - 8, canvas.height - 10);
+                    ctx.lineTo(17, canvas.height - 10);
+                    ctx.closePath();
+                    ctx.fill();
+                }
+
+                // White accent border
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
+                ctx.setLineDash([5, 5]);
+                ctx.lineWidth = 1;
+                ctx.stroke();
+                ctx.setLineDash([]);
+                
+                // Health segment markers
+                ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
+                for(let i=1; i<4; i++) {
+                    const x = 25 + (canvas.width - 40) * (i/4);
+                    ctx.beginPath();
+                    ctx.moveTo(x, 10);
+                    ctx.lineTo(x-8, canvas.height-10);
+                    ctx.stroke();
+                }
+                
+                texture.needsUpdate = true;
+            }
+            dummyHealthSprite.userData.updateTexture = updateDummyHealthTexture;
+            updateDummyHealthTexture();
+
             // Define manual boxes: { w: width, h: height, d: depth, x: posX, y: posY, z: posZ, rx: rotX, ry: rotY, rz: rotZ, color: hexColor }
             const manualBoxes = [
                 { w: 4, h: 4, d: 4, x: 10, y: 2, z: -10, rx: 0, ry: Math.PI / 4, rz: 0, color: 0x882222 },
@@ -563,6 +731,7 @@
                 { w: 2, h: 20, d: 80, x: -30, y: 10, z: 0, rx: 0, ry: 0, rz: 0, color: 0xff0000 }
             ];
 
+            const physicsBoxes = [];
             for (const config of manualBoxes) {
                 const box = new THREE.Mesh(
                     new THREE.BoxGeometry(config.w, config.h, config.d), 
@@ -572,6 +741,13 @@
                 box.rotation.set(config.rx, config.ry, config.rz);
                 box.castShadow = true;
                 box.receiveShadow = true;
+                
+                // Add physics properties
+                box.userData.velocity = new THREE.Vector3();
+                box.userData.angularVelocity = new THREE.Vector3();
+                box.userData.mass = config.w * config.h * config.d;
+                physicsBoxes.push(box);
+                
                 scene.add(box);
                 collidableMeshes.push(box);
             }
@@ -1061,6 +1237,178 @@
                     }
                 }
 
+                // Dummy health bar logic
+                if (dummyShowHealthTimer > 0 && !isDummyDead) {
+                    dummyShowHealthTimer -= dt;
+                    if (dummyHealthSprite) {
+                        dummyHealthSprite.visible = true;
+                        dummyHealthSprite.material.opacity = dummyShowHealthTimer > 0.5 ? 1 : dummyShowHealthTimer / 0.5;
+                        // Billboarding: make the sprite always face the camera
+                        dummyHealthSprite.quaternion.copy(camera.quaternion);
+                    }
+                } else {
+                    if (dummyHealthSprite) dummyHealthSprite.visible = false;
+                }
+
+                // Dummy respawn logic
+                if (isDummyDead) {
+                    dummyRespawnTimer -= dt;
+                    if (dummyRespawnTimer <= 0) {
+                        // Respawn
+                        isDummyDead = false;
+                        dummyHealth = 100;
+                        dummyPhysicsActive = false;
+                        if (dummyHealthSprite) {
+                            dummyHealthSprite.visible = false;
+                            dummyHealthSprite.userData.updateTexture();
+                        }
+                        
+                        // Rebuild dummy
+                        dummyParts.forEach(part => {
+                            scene.remove(part); // remove from world
+                            // Reset rotation
+                            part.rotation.set(0, 0, 0);
+                            dummyMesh.add(part);
+                        });
+                        
+                        // Reset part positions
+                        dummyParts.find(p => p.userData.part === 'torso').position.set(0, 1.0, 0);
+                        dummyParts.find(p => p.userData.part === 'head').position.set(0, 1.8, 0);
+                        dummyParts.find(p => p.userData.part === 'leftArm').position.set(-0.6, 1.1, 0);
+                        dummyParts.find(p => p.userData.part === 'rightArm').position.set(0.6, 1.1, 0);
+                        dummyParts.find(p => p.userData.part === 'leftLeg').position.set(-0.25, 0.6, 0);
+                        dummyParts.find(p => p.userData.part === 'rightLeg').position.set(0.25, 0.6, 0);
+                        
+                        scene.add(dummyMesh);
+                        
+                        // Add hitbox back
+                        const hitbox = dummyMesh.children.find(c => c.userData.isHitbox);
+                        if (hitbox && !collidableMeshes.includes(hitbox)) {
+                            collidableMeshes.push(hitbox);
+                        }
+                    }
+                }
+
+                // Dummy physics
+                if (dummyPhysicsActive) {
+                    const pPos = controls.getObject().position;
+                    dummyParts.forEach(part => {
+                        // Apply movement
+                        part.userData.velocity.y -= 25.0 * dt; // gravity
+                        part.position.addScaledVector(part.userData.velocity, dt);
+                        
+                        part.rotation.x += part.userData.angularVelocity.x * dt;
+                        part.rotation.y += part.userData.angularVelocity.y * dt;
+                        part.rotation.z += part.userData.angularVelocity.z * dt;
+
+                        // Friction/Damping
+                        part.userData.velocity.x *= (1.0 - 2.0 * dt);
+                        part.userData.velocity.z *= (1.0 - 2.0 * dt);
+                        part.userData.angularVelocity.multiplyScalar(1.0 - 1.5 * dt);
+
+                        // Collision with ground
+                        const radius = 0.15;
+                        if (part.position.y < radius) {
+                            part.position.y = radius;
+                            // Very low bounce to stop them from "flying away"
+                            part.userData.velocity.y *= -0.1; 
+                            part.userData.velocity.x *= 0.4;
+                            part.userData.velocity.z *= 0.4;
+                            part.userData.angularVelocity.multiplyScalar(0.4);
+                            
+                            if (Math.abs(part.userData.velocity.y) < 0.3) part.userData.velocity.y = 0;
+                        }
+
+                        // Collision with physics boxes
+                        physicsBoxes.forEach(boxMesh => {
+                            const b1 = new THREE.Box3().setFromObject(part);
+                            const b2 = new THREE.Box3().setFromObject(boxMesh);
+                            
+                            if (b1.intersectsBox(b2)) {
+                                const center = new THREE.Vector3();
+                                b2.getCenter(center);
+                                const dir = new THREE.Vector3().subVectors(part.position, center).normalize();
+                                part.position.addScaledVector(dir, 0.1);
+                                part.userData.velocity.reflect(dir).multiplyScalar(0.2);
+                                // Push the box slightly
+                                boxMesh.userData.velocity.addScaledVector(dir, -2.0 * dt);
+                            }
+                        });
+
+                        // Push by player
+                        const distToP = part.position.distanceTo(pPos);
+                        if (distToP < 1.5) { 
+                            const pushDir = new THREE.Vector3().subVectors(part.position, pPos);
+                            pushDir.y = 0;
+                            pushDir.normalize();
+                            const force = (1.0 - distToP / 1.5) * 15.0 * dt;
+                            part.userData.velocity.addScaledVector(pushDir, force);
+                            part.userData.angularVelocity.add(new THREE.Vector3(Math.random()-0.5, 0.5, Math.random()-0.5).multiplyScalar(force * 5));
+                        }
+                    });
+                }
+
+                // Global Box Physics
+                const playerPosPhys = controls.getObject().position;
+                physicsBoxes.forEach(box => {
+                    // Gravity
+                    box.userData.velocity.y -= 18.0 * dt;
+                    box.position.addScaledVector(box.userData.velocity, dt);
+                    
+                    // Rotation
+                    box.rotation.x += box.userData.angularVelocity.x * dt;
+                    box.rotation.y += box.userData.angularVelocity.y * dt;
+                    box.rotation.z += box.userData.angularVelocity.z * dt;
+
+                    // Air Friction
+                    box.userData.velocity.x *= (1.0 - 0.8 * dt);
+                    box.userData.velocity.z *= (1.0 - 0.8 * dt);
+                    box.userData.angularVelocity.multiplyScalar(1.0 - 1.2 * dt);
+
+                    // Floor Collision
+                    const boxB = new THREE.Box3().setFromObject(box);
+                    const floorY = 0;
+                    if (boxB.min.y < floorY) {
+                        const overlap = floorY - boxB.min.y;
+                        box.position.y += overlap;
+                        box.userData.velocity.y *= -0.15; // Low bounce
+                        box.userData.velocity.x *= 0.6; // Floor friction
+                        box.userData.velocity.z *= 0.6;
+                        box.userData.angularVelocity.multiplyScalar(0.5);
+                        
+                        if (Math.abs(box.userData.velocity.y) < 0.4) box.userData.velocity.y = 0;
+                    }
+
+                    // Player Push
+                    const distToPlayer = box.position.distanceTo(playerPosPhys);
+                    const pushRadius = 2.2;
+                    if (distToPlayer < pushRadius) {
+                        const pushDir = new THREE.Vector3().subVectors(box.position, playerPosPhys);
+                        pushDir.y = 0;
+                        pushDir.normalize();
+                        const force = (1.0 - distToPlayer / pushRadius) * 40.0 * dt;
+                        box.userData.velocity.addScaledVector(pushDir, force);
+                        // Tumble effect
+                        box.userData.angularVelocity.x += (Math.random() - 0.5) * force * 0.2;
+                        box.userData.angularVelocity.z += (Math.random() - 0.5) * force * 0.2;
+                    }
+                    
+                    // Box-Box Collision
+                    physicsBoxes.forEach(other => {
+                        if (box === other) return;
+                        const b1 = new THREE.Box3().setFromObject(box);
+                        const b2 = new THREE.Box3().setFromObject(other);
+                        if (b1.intersectsBox(b2)) {
+                            const dir = new THREE.Vector3().subVectors(box.position, other.position).normalize();
+                            box.position.addScaledVector(dir, 0.15);
+                            box.userData.velocity.addScaledVector(dir, 8.0 * dt);
+                            other.userData.velocity.addScaledVector(dir, -8.0 * dt);
+                            // Transfer rotation
+                            box.userData.angularVelocity.addScaledVector(new THREE.Vector3(Math.random()-0.5, 0, Math.random()-0.5), 2 * dt);
+                        }
+                    });
+                });
+
                 updateAction();
 
                 direction.z = Number(moveForward) - Number(moveBackward);
@@ -1263,9 +1611,67 @@
                         bullets.splice(i, 1);
                         
                         const hitObject = intersects[0].object;
-                        if (hitObject.geometry && hitObject.geometry.type === 'BoxGeometry') {
-                            const oldColor = hitObject.material.color.getHex();
-                            hitObject.material.color.setHex(0xffffff);
+                        
+                        if (hitObject.userData.isDummy && !isDummyDead) {
+                            dummyHealth -= 25; // bullet damage
+                            dummyShowHealthTimer = 3.0; // Show health for 3 seconds
+                            if (dummyHealthSprite) {
+                                dummyHealthSprite.visible = true;
+                                dummyHealthSprite.userData.updateTexture();
+                            }
+                            
+                            // Visual hit feedback on all dummy parts
+                            dummyParts.forEach(part => {
+                                part.material.color.setHex(0xffffff);
+                                setTimeout(() => {
+                                    if(part && part.material) {
+                                        part.material.color.setHex(0xff0000);
+                                    }
+                                }, 100);
+                            });
+
+                            if (dummyHealthSprite) {
+                                dummyHealthSprite.visible = true;
+                                dummyHealthSprite.userData.updateTexture();
+                            }
+
+                            if (dummyHealth <= 0) {
+                                dummyHealth = 0;
+                                isDummyDead = true;
+                                dummyPhysicsActive = true;
+                                dummyRespawnTimer = DUMMY_RESPAWN_TIME;
+                                
+                                // Setup physics properties for each part
+                                dummyParts.forEach(part => {
+                                    const worldPos = new THREE.Vector3();
+                                    const worldQuat = new THREE.Quaternion();
+                                    part.getWorldPosition(worldPos);
+                                    part.getWorldQuaternion(worldQuat);
+                                    
+                                    if (part.parent) part.parent.remove(part);
+                                    scene.add(part);
+                                    
+                                    part.position.copy(worldPos);
+                                    part.quaternion.copy(worldQuat);
+
+                                    part.userData.velocity = new THREE.Vector3(
+                                        (Math.random() - 0.5) * 8,
+                                        Math.random() * 8 + 4,
+                                        (Math.random() - 0.5) * 8
+                                    );
+                                    part.userData.angularVelocity = new THREE.Vector3(
+                                        (Math.random() - 0.5) * 15,
+                                        (Math.random() - 0.5) * 15,
+                                        (Math.random() - 0.5) * 15
+                                    );
+                                });
+                                
+                                // Remove dummy mesh container and hitbox from scene/collision
+                                scene.remove(dummyMesh);
+                                const hitboxIdx = collidableMeshes.findIndex(m => m.userData.isHitbox);
+                                if (hitboxIdx > -1) collidableMeshes.splice(hitboxIdx, 1);
+                            }
+                        } else if (hitObject.geometry && hitObject.geometry.type === 'BoxGeometry') {
                             setTimeout(() => {
                                 if(hitObject && hitObject.material) {
                                     hitObject.material.color.setHex(oldColor);
