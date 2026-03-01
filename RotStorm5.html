@@ -253,8 +253,20 @@
             <input type="range" id="cont-sens-slider" min="0.1" max="5.0" step="0.1" value="1.0">
         </div>
         <div class="setting-row">
-            <label>Volume</label>
+            <label>Master Volume</label>
             <input type="range" id="vol-slider" min="0.0" max="1.0" step="0.05" value="1.0">
+        </div>
+        <div class="setting-row">
+            <label>Gunshot Volume</label>
+            <input type="range" id="gun-vol-slider" min="0.0" max="1.0" step="0.05" value="1.0">
+        </div>
+        <div class="setting-row">
+            <label>Walking Volume</label>
+            <input type="range" id="walk-vol-slider" min="0.0" max="1.0" step="0.05" value="1.0">
+        </div>
+        <div class="setting-row">
+            <label>Ambient Volume</label>
+            <input type="range" id="ambient-vol-slider" min="0.0" max="1.0" step="0.05" value="1.0">
         </div>
         <button class="menu-btn" id="btn-close-settings" style="margin-top: 40px;">Back</button>
     </div>
@@ -325,7 +337,16 @@
         const controllerStatus = document.getElementById('controller-status');
 
         const gunSoundUrl = 'https://raw.githubusercontent.com/Ren23447/Rotstorm-FPS/main/Gunshot.mp3';
+        const walkSoundUrl = 'https://raw.githubusercontent.com/Ren23447/Rotstorm-FPS/main/freesound_community-walking-96582.mp3';
+        const walkAudio = new Audio(walkSoundUrl);
+        walkAudio.loop = true;
+        const ambientSoundUrl = 'https://raw.githubusercontent.com/Ren23447/Rotstorm-FPS/main/dbsound-avala-trail-forest-nature-246779.mp3';
+        const ambientAudio = new Audio(ambientSoundUrl);
+        ambientAudio.loop = true;
         let masterVolume = 1.0;
+        let gunVolume = 1.0;
+        let walkVolume = 1.0;
+        let ambientVolume = 1.0;
         
         const bullets = [];
         const collidableMeshes = [];
@@ -441,7 +462,7 @@
                         fadeToAction('shoot', 0.1);
                         
                         const audio = new Audio(gunSoundUrl);
-                        audio.volume = masterVolume;
+                        audio.volume = masterVolume * gunVolume;
                         audio.play().catch(e => console.log('Audio play failed:', e));
                         
                         spawnBullet();
@@ -625,6 +646,17 @@
             
             document.getElementById('vol-slider').addEventListener('input', (e) => {
                 masterVolume = parseFloat(e.target.value);
+                ambientAudio.volume = masterVolume * ambientVolume * 0.4;
+            });
+            document.getElementById('gun-vol-slider').addEventListener('input', (e) => {
+                gunVolume = parseFloat(e.target.value);
+            });
+            document.getElementById('walk-vol-slider').addEventListener('input', (e) => {
+                walkVolume = parseFloat(e.target.value);
+            });
+            document.getElementById('ambient-vol-slider').addEventListener('input', (e) => {
+                ambientVolume = parseFloat(e.target.value);
+                ambientAudio.volume = masterVolume * ambientVolume * 0.4;
             });
 
             controls.addEventListener('lock', () => {
@@ -634,6 +666,8 @@
                 crosshair.style.display = 'block';
                 ammoContainer.style.display = 'block';
                 updateAmmoUI();
+                ambientAudio.volume = masterVolume * ambientVolume * 0.4;
+                if (ambientAudio.paused) ambientAudio.play().catch(e => console.log('Ambient play failed:', e));
             });
             controls.addEventListener('unlock', () => {
                 if (gameState === 'PLAYING') {
@@ -641,6 +675,7 @@
                     crosshair.style.display = 'none';
                     ammoContainer.style.display = 'none';
                     pauseScreen.classList.remove('hidden');
+                    if (!ambientAudio.paused) ambientAudio.pause();
                 }
             });
 
@@ -776,7 +811,7 @@
                         fadeToAction('shoot', 0.1);
                         
                         const audio = new Audio(gunSoundUrl);
-                        audio.volume = masterVolume;
+                        audio.volume = masterVolume * gunVolume;
                         audio.play().catch(e => console.log('Audio play failed:', e));
                         
                         spawnBullet();
@@ -967,6 +1002,24 @@
                 let moveRight = keys.KeyD;
                 isRunning = keys.ShiftLeft || keys.ShiftRight;
                 const isMoving = moveForward || moveBackward || moveLeft || moveRight;
+
+                if (isMoving && canJump && !isSliding) {
+                    if (isRunning && !isStaminaExhausted) {
+                        walkAudio.playbackRate = 1.3;
+                        walkAudio.volume = masterVolume * walkVolume * 0.8;
+                    } else if (isCrouching) {
+                        walkAudio.playbackRate = 0.7;
+                        walkAudio.volume = masterVolume * walkVolume * 0.3;
+                    } else {
+                        walkAudio.playbackRate = 1.0;
+                        walkAudio.volume = masterVolume * walkVolume * 0.5;
+                    }
+                    if (walkAudio.paused) {
+                        walkAudio.play().catch(e => console.log('Audio play failed:', e));
+                    }
+                } else {
+                    if (!walkAudio.paused) walkAudio.pause();
+                }
 
                 if (isMoving && isRunning && !isCrouching && !isSliding && !isStaminaExhausted) {
                     stamina -= STAMINA_DRAIN * dt;
@@ -1257,6 +1310,7 @@
                 euler.z = 0;
                 camera.quaternion.setFromEuler(euler);
             } else {
+                if (!walkAudio.paused) walkAudio.pause();
                 renderer.render(scene, camera);
             }
         }
