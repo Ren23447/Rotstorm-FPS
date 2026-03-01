@@ -220,10 +220,10 @@
         </div>
         <div id="interaction-prompt" style="position: absolute; top: 55%; left: 50%; transform: translate(-50%, -50%); color: #fff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; display: none; z-index: 15; pointer-events: none;">
             <div style="background: rgba(0, 0, 0, 0.6); padding: 8px 20px; border-radius: 4px; border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
-                <div style="font-size: 12px; text-transform: uppercase; letter-spacing: 2px; opacity: 0.8; margin-bottom: 4px;">Ammunition</div>
+                <div style="font-size: 12px; text-transform: uppercase; letter-spacing: 2px; opacity: 0.8; margin-bottom: 4px;" id="interaction-title">Ammunition</div>
                 <div style="font-size: 20px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 10px;">
                     <span style="background: #fff; color: #000; padding: 2px 8px; border-radius: 3px; font-size: 18px;">F</span>
-                    <span style="letter-spacing: 1px;">REFILL AMMO</span>
+                    <span style="letter-spacing: 1px;" id="interaction-action">REFILL AMMO</span>
                 </div>
             </div>
         </div>
@@ -429,12 +429,14 @@
           function damagePlayer(amount, sourcePos, ignoreArmor = false) {
               if (isPlayerDead) return;
               healthRegenTimer = 0; // reset regen
-              timeSinceLastDamage = 0;
               
-              if (!isDamageSoundPlaying && amount > 0) {
+              if (!isDamageSoundPlaying && typeof damageAudio !== 'undefined') {
                   isDamageSoundPlaying = true;
                   damageAudio.currentTime = 0;
-                  damageAudio.play().catch(e => console.log('Audio error:', e));
+                  damageAudio.play().catch(e => {
+                      console.log('Audio error:', e);
+                      isDamageSoundPlaying = false;
+                  });
               }
               
               if (!ignoreArmor && playerArmor > 0) {
@@ -507,9 +509,11 @@
                   if (indicator) {
                       indicator.style.display = 'block';
                       indicator.style.opacity = '1';
-                      setTimeout(() => {
+                      if (indicator.fadeTimeout) clearTimeout(indicator.fadeTimeout);
+                      if (indicator.hideTimeout) clearTimeout(indicator.hideTimeout);
+                      indicator.fadeTimeout = setTimeout(() => {
                           indicator.style.opacity = '0';
-                          setTimeout(() => indicator.style.display = 'none', 200);
+                          indicator.hideTimeout = setTimeout(() => indicator.style.display = 'none', 200);
                       }, 500);
                   }
                   return;
@@ -529,14 +533,18 @@
               const arc = document.getElementById('damage-arc');
               if (arc) {
                   arc.style.display = 'block';
-                  setTimeout(() => {
-                      arc.style.transform = `translate(-50%, -50%) rotate(${angle}deg)`;
-                      arc.style.opacity = '1';
-                  }, 10);
+                  // Use requestAnimationFrame to ensure display: block is applied before opacity transition
+                  requestAnimationFrame(() => {
+                      requestAnimationFrame(() => {
+                          arc.style.transform = `translate(-50%, -50%) rotate(${angle}deg)`;
+                          arc.style.opacity = '1';
+                      });
+                  });
                   clearTimeout(arc.damageTimeout);
+                  clearTimeout(arc.hideTimeout);
                   arc.damageTimeout = setTimeout(() => {
                       arc.style.opacity = '0';
-                      setTimeout(() => arc.style.display = 'none', 500);
+                      arc.hideTimeout = setTimeout(() => arc.style.display = 'none', 500);
                   }, 1000);
               }
           }
@@ -546,9 +554,9 @@
         let dummyHealth = 100;
         let dummyMesh = null;
         let ammoCrate = null;
+        let healthCrate = null;
+        let healthCrateHitbox = null;
         let ammoCrateHitbox = null;
-        let medkit = null;
-        let medkitHitbox = null;
         let dummyParts = [];
         let dummyShowHealthTimer = 0;
         let isDummyDead = false;
@@ -734,23 +742,9 @@
                 }
 
                 if (buttons[2] && buttons[2].pressed && !isReloading && !isShooting && !isInspecting) {
-                    const interactable = checkInteraction();
-                    if (interactable === 'ammo') {
+                    if (checkInteraction()) {
                         reserveAmmo = MAX_RESERVE_AMMO;
                         updateAmmoUI();
-                    } else if (interactable === 'medkit') {
-                        if (playerHealth < 100) {
-                            playerHealth = 100;
-                            updatePlayerStatusUI();
-                            medkit.visible = false;
-                            medkitHitbox.position.y = -100; // Move hitbox away
-                            
-                            // Respawn medkit after 30 seconds
-                            setTimeout(() => {
-                                medkit.visible = true;
-                                medkitHitbox.position.copy(medkit.position);
-                            }, 30000);
-                        }
                     } else if (actions['reload']) {
                         if (ammo < MAX_AMMO && reserveAmmo > 0) {
                             isReloading = true;
@@ -967,6 +961,38 @@
                 scene.add(ammoCrate);
             });
 
+            // Health crate loader
+            new GLTFLoader().load('https://raw.githubusercontent.com/Ren23447/Rotstorm-FPS/main/sci-fi_medkit.glb', (gltf) => {
+                healthCrate = gltf.scene;
+                // Position on the wall of the yellow rectangle (x: 20, z: 15, w: 3, d: 3)
+                // Position to place it on the front face of the yellow box. Yellow box center x=20, z=15.
+                // Assuming front face is at z=13.5 (15 - depth/2 = 15 - 1.5 = 13.5)
+                healthCrate.position.set(20, 2, 13.5); 
+                healthCrate.scale.set(0.60, 0.60, 0.60); // Scale as appropriate (larger)
+                healthCrate.rotation.set(1.59, 0, Math.PI / 2); // Rotate to stick out from wall appropriately
+                
+                healthCrate.castShadow = true;
+                healthCrate.receiveShadow = true;
+                
+                healthCrate.traverse((child) => {
+                    if (child.isMesh) {
+                        child.castShadow = true;
+                        child.receiveShadow = true;
+                    }
+                });
+                
+                const hitboxGeo = new THREE.BoxGeometry(1.0, 1.0, 1.0);
+                const hitboxMat = new THREE.MeshBasicMaterial({ visible: false });
+                healthCrateHitbox = new THREE.Mesh(hitboxGeo, hitboxMat);
+                healthCrateHitbox.position.copy(healthCrate.position);
+                healthCrateHitbox.userData.isHealthCrate = true;
+                
+                scene.add(healthCrateHitbox);
+                collidableMeshes.push(healthCrateHitbox);
+
+                scene.add(healthCrate);
+            });
+
             function updateDummyHealthTexture() {
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
                 
@@ -1043,9 +1069,7 @@
                 { w: 0.2, h: 1.5, d: 0.2, x: -5.9, y: 0.75, z: 4.1, rx: 0, ry: 0, rz: 0, color: 0x444444 }, // Leg
                 { w: 0.2, h: 1.5, d: 0.2, x: -4.1, y: 0.75, z: 4.1, rx: 0, ry: 0, rz: 0, color: 0x444444 }, // Leg
                 // Big bright red wall for wallrunning
-                { w: 2, h: 20, d: 80, x: -30, y: 10, z: 0, rx: 0, ry: 0, rz: 0, color: 0xff0000 },
-                // New wall near yellow rectangle (yellow is at x: 20, y: 4, z: 15)
-                { w: 10, h: 8, d: 2, x: 20, y: 4, z: 10, rx: 0, ry: 0, rz: 0, color: 0x888888 }
+                { w: 2, h: 20, d: 80, x: -30, y: 10, z: 0, rx: 0, ry: 0, rz: 0, color: 0xff0000 }
             ];
 
             const physicsBoxes = [];
@@ -1271,23 +1295,18 @@
                 }
 
                 if (e.code === 'KeyF') {
-                    const interactable = checkInteraction();
-                    if (interactable === 'ammo') {
+                    const interaction = checkInteraction();
+                    if (interaction.type === 'ammo') {
                         reserveAmmo = MAX_RESERVE_AMMO;
                         updateAmmoUI();
-                    } else if (interactable === 'medkit') {
-                        if (playerHealth < 100) {
-                            playerHealth = 100;
-                            updatePlayerStatusUI();
-                            medkit.visible = false;
-                            medkitHitbox.position.y = -100; // Move hitbox away
-                            
-                            // Respawn medkit after 30 seconds
-                            setTimeout(() => {
-                                medkit.visible = true;
-                                medkitHitbox.position.copy(medkit.position);
-                            }, 30000);
-                        }
+                    } else if (interaction.type === 'health') {
+                        playerHealth = Math.min(100, playerHealth + 50);
+                        updatePlayerStatusUI();
+                        scene.remove(healthCrate);
+                        scene.remove(healthCrateHitbox);
+                        const idx = collidableMeshes.indexOf(healthCrateHitbox);
+                        if (idx > -1) collidableMeshes.splice(idx, 1);
+                        healthCrateHitbox = null;
                     }
                 }
 
@@ -1454,29 +1473,28 @@
         }
 
         function checkInteraction() {
-            let interactable = null;
-            
             const pos = controls.getObject().position;
             const fwd = new THREE.Vector3();
             camera.getWorldDirection(fwd);
-            
             const raycaster = new THREE.Raycaster(pos, fwd, 0, 3.0);
             
+            let result = { type: 'none' };
+            
             if (ammoCrateHitbox) {
-                const intersectsAmmo = raycaster.intersectObject(ammoCrateHitbox);
-                if (intersectsAmmo.length > 0) {
-                    interactable = 'ammo';
+                const intersects = raycaster.intersectObject(ammoCrateHitbox);
+                if (intersects.length > 0) {
+                    result = { type: 'ammo' };
                 }
             }
             
-            if (medkitHitbox && !interactable && medkit.visible) {
-                const intersectsMedkit = raycaster.intersectObject(medkitHitbox);
-                if (intersectsMedkit.length > 0) {
-                    interactable = 'medkit';
+            if (healthCrateHitbox && result.type === 'none') {
+                const intersects = raycaster.intersectObject(healthCrateHitbox);
+                if (intersects.length > 0) {
+                    result = { type: 'health' };
                 }
             }
             
-            return interactable;
+            return result;
         }
 
         function spawnBullet() {
@@ -1539,17 +1557,6 @@
             requestAnimationFrame(animate);
             const dt = Math.min(clock.getDelta(), 0.1);
 
-            if (gameState === 'PLAYING' && !isPlayerDead) {
-                timeSinceLastDamage += dt;
-                if (timeSinceLastDamage >= HEALTH_REGEN_DELAY) {
-                    if (playerHealth < 100) {
-                        playerHealth += HEALTH_REGEN_RATE * dt;
-                        if (playerHealth > 100) playerHealth = 100;
-                        updatePlayerStatusUI();
-                    }
-                }
-            }
-
             if (mixer) mixer.update(dt);
             
             handleGamepadInput(dt);
@@ -1557,18 +1564,22 @@
             if (gameState === 'PLAYING') {
                 const prompt = document.getElementById('interaction-prompt');
                 if (prompt) {
-                    const interactable = checkInteraction();
-                    if (interactable) {
+                    const interaction = checkInteraction();
+                    if (interaction.type !== 'none') {
                         prompt.style.display = 'block';
-                        
-                        // We will update the HTML string instead of using DOM methods since we are generating text
-                        prompt.innerHTML = `<div style="background: rgba(0, 0, 0, 0.6); padding: 8px 20px; border-radius: 4px; border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
-                <div style="font-size: 12px; text-transform: uppercase; letter-spacing: 2px; opacity: 0.8; margin-bottom: 4px;">${interactable === 'ammo' ? 'Ammunition' : 'Health'}</div>
-                <div style="font-size: 20px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 10px;">
-                    <span style="background: #fff; color: #000; padding: 2px 8px; border-radius: 3px; font-size: 18px;">F</span>
-                    <span style="letter-spacing: 1px;">${interactable === 'ammo' ? 'REFILL AMMO' : 'USE MEDKIT'}</span>
-                </div>
-            </div>`;
+                        const promptTitle = document.getElementById('interaction-title');
+                        const promptAction = document.getElementById('interaction-action');
+                        if (promptTitle && promptAction) {
+                            if (interaction.type === 'health' && playerHealth >= 100) {
+                                prompt.style.display = 'none';
+                            } else if (interaction.type === 'ammo') {
+                                promptTitle.innerText = 'Ammunition';
+                                promptAction.innerText = 'REFILL AMMO';
+                            } else if (interaction.type === 'health') {
+                                promptTitle.innerText = 'Medical';
+                                promptAction.innerText = 'USE MEDKIT';
+                            }
+                        }
                     } else {
                         prompt.style.display = 'none';
                     }
@@ -1597,6 +1608,15 @@
                     }
                 } else {
                     if (!walkAudio.paused) walkAudio.pause();
+                }
+
+                // Natural health regeneration
+                if (playerHealth > 0 && playerHealth < 100) {
+                    healthRegenTimer += dt;
+                    if (healthRegenTimer > 5.0) { // Wait 5 seconds before regenerating
+                        playerHealth = Math.min(100, playerHealth + 2 * dt); // 2 health per second
+                        updatePlayerStatusUI();
+                    }
                 }
 
                 if (isMoving && isRunning && !isCrouching && !isSliding && !isStaminaExhausted) {
