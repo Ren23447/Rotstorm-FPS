@@ -163,7 +163,16 @@
             <div id="wallrun-bar"></div>
         </div>
         <div id="ammo-container" style="display: none;">
-            <span id="ammo-current">30</span><span style="font-size: 24px; color: #aaa;"> / 30</span>
+            <span id="ammo-current">30</span><span style="font-size: 24px; color: #aaa;"> / <span id="ammo-reserve">90</span></span>
+        </div>
+        <div id="interaction-prompt" style="position: absolute; top: 55%; left: 50%; transform: translate(-50%, -50%); color: #fff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; display: none; z-index: 15; pointer-events: none;">
+            <div style="background: rgba(0, 0, 0, 0.6); padding: 8px 20px; border-radius: 4px; border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
+                <div style="font-size: 12px; text-transform: uppercase; letter-spacing: 2px; opacity: 0.8; margin-bottom: 4px;">Ammunition</div>
+                <div style="font-size: 20px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 10px;">
+                    <span style="background: #fff; color: #000; padding: 2px 8px; border-radius: 3px; font-size: 18px;">F</span>
+                    <span style="letter-spacing: 1px;">REFILL AMMO</span>
+                </div>
+            </div>
         </div>
         <div id="crosshair"></div>
         <div id="controller-status"></div>
@@ -306,6 +315,8 @@
         // Dummy target variables
         let dummyHealth = 100;
         let dummyMesh = null;
+        let ammoCrate = null;
+        let ammoCrateHitbox = null;
         let dummyParts = [];
         let dummyShowHealthTimer = 0;
         let isDummyDead = false;
@@ -334,7 +345,9 @@
         const vaultDuration = 0.25;
         
         const MAX_AMMO = 30;
+        const MAX_RESERVE_AMMO = 90;
         let ammo = MAX_AMMO;
+        let reserveAmmo = MAX_RESERVE_AMMO;
 
         const loadingScreen = document.getElementById('loading-screen');
         const homeScreen = document.getElementById('home-screen');
@@ -381,6 +394,8 @@
             if (ammoCurrent) {
                 ammoCurrent.innerText = ammo;
                 ammoCurrent.style.color = ammo <= 10 ? '#ff4444' : '#ffffff';
+                const ammoReserve = document.getElementById('ammo-reserve');
+                if (ammoReserve) ammoReserve.innerText = reserveAmmo;
             }
         }
 
@@ -483,11 +498,16 @@
                     }
                 }
 
-                if (buttons[2] && buttons[2].pressed && !isReloading && !isShooting && !isInspecting && actions['reload']) {
-                    if (ammo <= 29) {
-                        isReloading = true;
-                        actions['reload'].reset();
-                        fadeToAction('reload', 0.2);
+                if (buttons[2] && buttons[2].pressed && !isReloading && !isShooting && !isInspecting) {
+                    if (checkInteraction()) {
+                        reserveAmmo = MAX_RESERVE_AMMO;
+                        updateAmmoUI();
+                    } else if (actions['reload']) {
+                        if (ammo < MAX_AMMO && reserveAmmo > 0) {
+                            isReloading = true;
+                            actions['reload'].reset();
+                            fadeToAction('reload', 0.2);
+                        }
                     }
                 }
 
@@ -658,6 +678,26 @@
             dummyHealthSprite.visible = false;
             dummyMesh.add(dummyHealthSprite);
 
+            // Ammo crate loader
+            new GLTFLoader().load('https://raw.githubusercontent.com/Ren23447/Rotstorm-FPS/main/Ammocrate.glb', (gltf) => {
+                ammoCrate = gltf.scene;
+                // Position on top of the ammo table we created at x: -5, y: 1.5, z: 5
+                ammoCrate.position.set(-5, 1.6, 5); 
+                ammoCrate.scale.set(0.20, 0.20, 0.20); // Scaled down for realism
+                
+                // Add a hitbox for interaction detection
+                const hitboxGeo = new THREE.BoxGeometry(0.20, 1.0, 0.9);
+                const hitboxMat = new THREE.MeshBasicMaterial({ visible: false });
+                ammoCrateHitbox = new THREE.Mesh(hitboxGeo, hitboxMat);
+                ammoCrateHitbox.position.copy(ammoCrate.position);
+                ammoCrateHitbox.userData.isAmmoCrate = true;
+                
+                scene.add(ammoCrateHitbox);
+                collidableMeshes.push(ammoCrateHitbox);
+                
+                scene.add(ammoCrate);
+            });
+
             function updateDummyHealthTexture() {
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
                 
@@ -727,6 +767,12 @@
                 { w: 0.2, h: 1.5, d: 0.2, x: -11.9, y: 0.75, z: -15, rx: 0, ry: 0, rz: 0, color: 0x888888 }, // Left leg
                 { w: 0.2, h: 1.5, d: 0.2, x: -8.1, y: 0.75, z: -15, rx: 0, ry: 0, rz: 0, color: 0x888888 }, // Right leg
                 { w: 4.0, h: 0.2, d: 0.2, x: -10, y: 1.4, z: -15, rx: 0, ry: 0, rz: 0, color: 0xdddddd }, // Top bar
+                // Ammo Table
+                { w: 2.0, h: 0.2, d: 2.0, x: -5, y: 1.5, z: 5, rx: 0, ry: 0, rz: 0, color: 0x555555 }, // Table top
+                { w: 0.2, h: 1.5, d: 0.2, x: -5.9, y: 0.75, z: 5.9, rx: 0, ry: 0, rz: 0, color: 0x444444 }, // Leg
+                { w: 0.2, h: 1.5, d: 0.2, x: -4.1, y: 0.75, z: 5.9, rx: 0, ry: 0, rz: 0, color: 0x444444 }, // Leg
+                { w: 0.2, h: 1.5, d: 0.2, x: -5.9, y: 0.75, z: 4.1, rx: 0, ry: 0, rz: 0, color: 0x444444 }, // Leg
+                { w: 0.2, h: 1.5, d: 0.2, x: -4.1, y: 0.75, z: 4.1, rx: 0, ry: 0, rz: 0, color: 0x444444 }, // Leg
                 // Big bright red wall for wallrunning
                 { w: 2, h: 20, d: 80, x: -30, y: 10, z: 0, rx: 0, ry: 0, rz: 0, color: 0xff0000 }
             ];
@@ -903,7 +949,10 @@
                     if (e.action === actions['shoot']) { isShooting = false; updateAction(); }
                     if (e.action === actions['reload']) { 
                         isReloading = false; 
-                        ammo = MAX_AMMO;
+                        const neededAmmo = MAX_AMMO - ammo;
+                        const ammoToReload = Math.min(neededAmmo, reserveAmmo);
+                        ammo += ammoToReload;
+                        reserveAmmo -= ammoToReload;
                         updateAmmoUI();
                         updateAction(); 
                     }
@@ -933,7 +982,7 @@
                 if (gameState !== 'PLAYING') return;
 
                 if (e.code === 'KeyR' && !isReloading && !isShooting && !isInspecting && actions['reload']) {
-                    if (ammo <= 29) {
+                    if (ammo < MAX_AMMO && reserveAmmo > 0) {
                         isReloading = true;
                         actions['reload'].reset();
                         fadeToAction('reload', 0.2);
@@ -944,6 +993,13 @@
                     isInspecting = true;
                     actions['inspect'].reset();
                     fadeToAction('inspect', 0.2);
+                }
+
+                if (e.code === 'KeyF') {
+                    if (checkInteraction()) {
+                        reserveAmmo = MAX_RESERVE_AMMO;
+                        updateAmmoUI();
+                    }
                 }
 
                 if (e.code === 'KeyZ') {
@@ -1107,6 +1163,22 @@
             return null;
         }
 
+        function checkInteraction() {
+            if (!ammoCrateHitbox) return false;
+            
+            const pos = controls.getObject().position;
+            const fwd = new THREE.Vector3();
+            camera.getWorldDirection(fwd);
+            
+            const raycaster = new THREE.Raycaster(pos, fwd, 0, 3.0);
+            const intersects = raycaster.intersectObject(ammoCrateHitbox);
+            
+            if (intersects.length > 0) {
+                return true;
+            }
+            return false;
+        }
+
         function spawnBullet() {
             const bullet = new THREE.Mesh(bulletGeometry, bulletMaterial);
             
@@ -1172,6 +1244,15 @@
             handleGamepadInput(dt);
 
             if (gameState === 'PLAYING') {
+                const prompt = document.getElementById('interaction-prompt');
+                if (prompt) {
+                    if (checkInteraction()) {
+                        prompt.style.display = 'block';
+                    } else {
+                        prompt.style.display = 'none';
+                    }
+                }
+
                 let moveForward = keys.KeyW;
                 let moveBackward = keys.KeyS;
                 let moveLeft = keys.KeyA;
